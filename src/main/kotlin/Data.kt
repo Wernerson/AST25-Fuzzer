@@ -33,11 +33,11 @@ data class DataSource(
     val columns: List<DataColumn>
 )
 
-fun createDataSources(rand: Random) = List(rand.nextInt(5..10)) {
+fun createDataSources(rand: Random, noTables: IntRange = 5..10) = List(rand.nextInt(noTables)) { ti ->
     DataSource(
-        name = "t$it",
+        name = "t$ti",
         columns = List(rand.nextInt(1..10)) {
-            DataColumn("c$it", DataType.entries.random(rand), rand.nextBoolean())
+            DataColumn("t${ti}_c$it", DataType.entries.random(rand), rand.nextBoolean())
         }
     )
 }

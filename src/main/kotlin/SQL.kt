@@ -4,9 +4,10 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 
 // https://sqlite.org/lang_select.html
+// https://sqlite.org/src/rptview?rn=7
 
-private const val MAX_QUERY_DEPTH = 3
-private const val MAX_EXPR_DEPTH = 5
+private const val MAX_QUERY_DEPTH = 5
+private const val MAX_EXPR_DEPTH = 10
 
 fun createDatabase(rand: Random, dataSources: List<DataSource>) = buildString {
     dataSources.forEach { ds ->
@@ -17,6 +18,13 @@ fun createDatabase(rand: Random, dataSources: List<DataSource>) = buildString {
         appendLine()
 
         // create index
+        append("CREATE ")
+        if (rand.nextBoolean()) append("UNIQUE ")
+        append("INDEX i${ds.name} ON ${ds.name} (")
+        append(Expr.rand(rand, listOf(ds), noAlias = true))
+        // TODO WHERE?
+        append(");")
+        appendLine()
 
         // insert data
         append("INSERT INTO ${ds.name} VALUES ")
@@ -52,12 +60,9 @@ class Select(
 
     companion object {
         fun rand(
-            rand: Random,
-            dataSources: List<DataSource>,
-            depth: Int = 0
+            rand: Random, dataSources: List<DataSource>, depth: Int = 0
         ): Pair<Select, List<DataSource>> {
             val (from, dataSources) = From.rand(rand, dataSources, depth)
-
             val where = if (rand.nextBoolean()) Where.rand(rand, dataSources) else null
 
             val resultCols = mutableListOf<ResultColumn>()
@@ -67,182 +72,232 @@ class Select(
                 resultCols.add(resultColumn)
                 sources.add(dataSource)
             }
+
+            val limit = Limit(Expr.LiteralValue("100"))
             return Pair(
                 Select(
-                    resultColumn = resultCols,
-                    from = from,
-                    where = where,
+                    resultColumn = resultCols, from = from, where = where, limit = limit
                 ), sources.toList()
             )
         }
     }
 }
 
-class From(
-    val tableOrSubquery: List<TableOrSubquery>,
-) {
-    override fun toString() = tableOrSubquery.joinToString()
+sealed interface From {
 
     companion object {
-        fun rand(
-            rand: Random, dataSources: List<DataSource>, depth: Int
-        ): Pair<From, List<DataSource>> {
-            val newSources = mutableSetOf<DataSource>()
-            val subs = mutableListOf<TableOrSubquery>()
-            for (i in 0..rand.nextInt(0..3)) {
-                val (sub, dataSources) = TableOrSubquery.rand(rand, dataSources, depth)
-                newSources.add(dataSources)
-                subs.add(sub)
+        fun rand(rand: Random, dataSources: List<DataSource>, depth: Int): Pair<From, List<DataSource>> =
+            if (rand.nextBoolean()) FromJoin.rand(rand, dataSources, depth)
+            else FromTableOrSubquery.rand(rand, dataSources, depth)
+    }
+
+    enum class JoinOp {
+        LEFT, INNER, CROSS
+    }
+
+    class FromJoin(
+        val left: TableOrSubquery, val op: JoinOp, val right: TableOrSubquery
+    ) : From {
+
+        override fun toString() = " $left $op JOIN $right "
+
+        companion object {
+            fun rand(rand: Random, dataSources: List<DataSource>, depth: Int): Pair<From, List<DataSource>> {
+                val (left, dsLeft) = TableOrSubquery.rand(rand, dataSources, depth + 1)
+                val (right, dsRight) = TableOrSubquery.rand(rand, dataSources, depth + 1)
+
+                val op = JoinOp.entries.random(rand)
+                return Pair(FromJoin(left, op, right), listOf(dsLeft, dsRight))
             }
-            return Pair(From(subs), newSources.toList())
         }
     }
-}
 
-sealed interface TableOrSubquery {
-    class Table(
-        val table: String, val alias: String
-    ) : TableOrSubquery {
-        override fun toString() = "$table AS $alias"
+    class FromTableOrSubquery(
+        val tableOrSubquery: List<TableOrSubquery>,
+    ) : From {
+        override fun toString() = tableOrSubquery.joinToString()
+
+        companion object {
+            fun rand(
+                rand: Random, dataSources: List<DataSource>, depth: Int
+            ): Pair<FromTableOrSubquery, List<DataSource>> {
+                val newSources = mutableSetOf<DataSource>()
+                val subs = mutableListOf<TableOrSubquery>()
+                for (i in 0..rand.nextInt(0..3)) {
+                    val (sub, dataSources) = TableOrSubquery.rand(rand, dataSources, depth)
+                    newSources.add(dataSources)
+                    subs.add(sub)
+                }
+                return Pair(FromTableOrSubquery(subs), newSources.toList())
+            }
+        }
     }
 
-    class Subquery(
-        val select: Select,
-        val alias: String,
-    ) : TableOrSubquery {
-        override fun toString() = "(${select.toString(subquery = true)})  AS $alias"
-    }
+    sealed interface TableOrSubquery {
+        class Table(
+            val table: String, val alias: String
+        ) : TableOrSubquery {
+            override fun toString() = "$table AS $alias"
+        }
 
-    companion object {
-        fun rand(
-            rand: Random, dataSources: List<DataSource>, depth: Int
-        ): Pair<TableOrSubquery, DataSource> {
-            val max = if (depth >= MAX_QUERY_DEPTH) 1 else 2
-            return when (rand.nextInt(1..max)) {
-                1 -> {
-                    val source = dataSources.random(rand)
-                    val ai = rand.nextInt(1000..9999)
-                    val alias = "ta$ai"
-                    Pair(Table(source.name, alias), DataSource(alias, source.columns))
+        class Subquery(
+            val select: Select,
+            val alias: String,
+        ) : TableOrSubquery {
+            override fun toString() = "(${select.toString(subquery = true)})  AS $alias"
+        }
+
+        companion object {
+            fun rand(
+                rand: Random, dataSources: List<DataSource>, depth: Int
+            ): Pair<TableOrSubquery, DataSource> {
+                val max = if (depth >= MAX_QUERY_DEPTH) 1 else 2
+                return when (rand.nextInt(1..max)) {
+                    1 -> {
+                        val source = dataSources.random(rand)
+                        val ai = rand.nextInt(1000..9999)
+                        val alias = "ta$ai"
+                        Pair(Table(source.name, alias), DataSource(alias, source.columns))
+                    }
+
+                    2 -> {
+                        val (select, dataSources) = Select.rand(rand, dataSources, depth + 1)
+                        val ai = rand.nextInt(1000..9999)
+                        val alias = "sa$ai"
+                        Pair(Subquery(select, alias), DataSource(alias, dataSources.flatMap { it.columns }))
+                    }
+
+                    else -> error("Random number out of bounds!")
                 }
-
-                2 -> {
-                    val (select, dataSources) = Select.rand(rand, dataSources, depth + 1)
-                    val ai = rand.nextInt(1000..9999)
-                    val alias = "sa$ai"
-                    Pair(Subquery(select, alias), DataSource(alias, dataSources.flatMap { it.columns }))
-                }
-
-                else -> error("Random number out of bounds!")
             }
         }
     }
 }
 
 sealed interface ResultColumn {
-//    object Star : ResultColumn {
-//        override fun toString() = "*"
-//    }
-
-//    class TableStar(val table: String) : ResultColumn {
-//        override fun toString() = "$table.*"
-//    }
-
     class TableColumn(
         val table: String, val column: String, val alias: String
     ) : ResultColumn {
         override fun toString() = "$table.$column AS $alias"
     }
 
-//    class ResultExpr(
-//        val expr: Expr, val alias: String? = null
-//    ) : ResultColumn {
-//        override fun toString() = buildString {
-//            append(expr)
-//            if (alias != null) append(" AS $alias") // todo randomize if AS should be there?
-//        }
-//    }
 
     companion object {
         fun rand(
             rand: Random, dataSources: List<DataSource>
         ): Pair<ResultColumn, DataSource> {
-//            return when (rand.nextInt(1..2)) {
-//                1 -> Star
-//                1 -> TableStar(TABLES.random(rand))
-//                2 -> ResultExpr(Expr.rand(rand)) // todo alias?
-//                else -> error("Random number out of bounds!")
-//            }
             val ds = dataSources.random(rand)
             val col = ds.columns.random(rand)
             val ai = rand.nextInt(0..9999)
             val alias = DataColumn(
-                "ca$ai",
-                col.type,
-                col.nullable
+                "ca$ai", col.type, col.nullable
             )
             return Pair(TableColumn(ds.name, col.name, alias.name), DataSource(ds.name, listOf(alias)))
         }
     }
 }
 
+private val BINARY_OPS = listOf(
+//    "||", "->", "->>",
+    "*", "/", "%", "+", "-", "&", "|", "<<", ">>", "<", ">", "<=", ">=", "=", "==", "<>", "!=", "IS", "IS NOT", "IN",
+//    "MATCH",
+    "LIKE", "AND", "OR"
+)
+
+private val UNARY_OPS = listOf(
+//    "# COLLATE",
+    "# ISNULL", " # NOTNULL", "# NOT NULL", "NOT #", "-(#)", "+#", "~#"
+)
+
+private val TERNARY_OPS = listOf(
+    "#1 BETWEEN #2 AND #3",
+)
+
+private val FUNCTIONS = listOf(
+    "abs" to 1, "changes" to 0, "hex" to 1, "ifnull" to 2, "length" to 1
+)
+
 sealed interface Expr {
     class LiteralValue(val literal: String) : Expr {
         override fun toString() = literal
+
+        companion object {
+            fun rand(rand: Random) = LiteralValue(DataType.entries.random(rand).rand(rand))
+        }
     }
 
-    class Column(
-        val table: String,
-        val column: String
+    class TableColumn(
+        val table: String? = null, val column: String
     ) : Expr {
-        override fun toString() = "$table.$column"
+        override fun toString() = buildString {
+            if (table != null) append("$table.")
+            append(column)
+        }
+
+        companion object {
+            fun rand(
+                rand: Random, dataSources: List<DataSource>, noAlias: Boolean = false
+            ) = dataSources.randomOrNull(rand)?.let { t ->
+                TableColumn(
+                    if (noAlias) null else t.name, t.columns.random(rand).name
+                )
+            }
+        }
     }
 
-    enum class BinaryOp(private val op: String) {
-        AND("AND"), OR("OR"),
-        EQ("="), NE("<>"),
-        LT("<"), LE("<="),
-        GT(">"), GE(">="),
-        ADD("+"), SUB("-"),
-        MUL("*"), DIV("/");
+    class FunctionCall(
+        val function: String, val args: List<Expr>
+    ) : Expr {
+        override fun toString() = "$function(${args.joinToString()})"
 
-        override fun toString() = op
+        companion object {
+            fun rand(
+                rand: Random, dataSources: List<DataSource>, depth: Int, noAlias: Boolean
+            ) = FUNCTIONS.random(rand).let { (func, args) ->
+                FunctionCall(func, List(args) { Expr.rand(rand, dataSources, depth, noAlias) })
+            }
+        }
+    }
+
+    class UnaryExpr(
+        val operator: String, val operand: Expr
+    ) : Expr {
+        override fun toString() = operator.replace("#", operand.toString())
+
+        companion object {
+            fun rand(
+                rand: Random, dataSources: List<DataSource>, depth: Int, noAlias: Boolean
+            ): UnaryExpr = UnaryExpr(UNARY_OPS.random(rand), Expr.rand(rand, dataSources, depth, noAlias))
+        }
     }
 
     class BinaryExpr(
-        val left: Expr,
-        val operator: BinaryOp,
-        val right: Expr
+        val left: Expr, val operator: String, val right: Expr
     ) : Expr {
         override fun toString() = "($left $operator $right)"
+
+        companion object {
+            fun rand(
+                rand: Random, dataSources: List<DataSource>, depth: Int, noAlias: Boolean
+            ): BinaryExpr = BinaryExpr(
+                Expr.rand(rand, dataSources, depth, noAlias),
+                BINARY_OPS.random(rand),
+                Expr.rand(rand, dataSources, depth, noAlias)
+            )
+        }
     }
 
     companion object {
-        fun randValue(
-            rand: Random,
-            dataSources: List<DataSource>,
-            dataType: DataType,
-            depth: Int
-        ): Expr = if (depth >= MAX_EXPR_DEPTH || rand.nextBoolean()) LiteralValue(dataType.rand(rand))
-        else dataSources
-            .flatMap { t -> t.columns.map { Pair(t.name, it) } }
-            .filter { (_, c) -> c.type == dataType }
-            .randomOrNull(rand)
-            ?.let { (t, c) -> Column(t, c.name) }
-            ?: LiteralValue(dataType.rand(rand))
-
-
-        fun randBoolean(
-            rand: Random,
-            dataSources: List<DataSource>,
-            depth: Int = 0
-        ): Expr  {
-            val type = dataSources.flatMap { it.columns }.random(rand).type
-            val left = randValue(rand, dataSources, type, depth+1)
-            val right = randValue(rand, dataSources, type, depth+1)
-            val op = listOf(BinaryOp.EQ, BinaryOp.NE).random(rand)
-            return BinaryExpr(left, op, right)
-        }
+        fun rand(
+            rand: Random, dataSources: List<DataSource>, depth: Int = 0, noAlias: Boolean = false
+        ): Expr = if (depth < MAX_EXPR_DEPTH) when (rand.nextInt(1..5)) {
+            1 -> UnaryExpr.rand(rand, dataSources, depth + 1, noAlias)
+            2 -> BinaryExpr.rand(rand, dataSources, depth + 1, noAlias)
+            3 -> LiteralValue.rand(rand)
+            4 -> FunctionCall.rand(rand, dataSources, depth + 1, noAlias)
+            5 -> TableColumn.rand(rand, dataSources, noAlias) ?: LiteralValue.rand(rand)
+            else -> error("Random number out of bounds!")
+        } else TableColumn.rand(rand, dataSources, noAlias) ?: LiteralValue.rand(rand)
     }
 }
 
@@ -251,12 +306,26 @@ class Where(val expr: Expr) {
     override fun toString() = "$expr"
 
     companion object {
-        fun rand(rand: Random, dataSources: List<DataSource>): Where  = Where(
-            Expr.randBoolean(rand, dataSources)
+        fun rand(rand: Random, dataSources: List<DataSource>): Where = Where(
+            Expr.rand(rand, dataSources)
         )
     }
 }
 
 class GroupBy(val expr: List<Expr>)
 class OrderBy(val orderingTerms: List<String>)
-class Limit(val expr: Expr)
+
+class Limit(
+    val expr: Expr, val offset: Expr? = null
+) {
+    override fun toString() = buildString {
+        append(expr.toString())
+        if (offset != null) append(" OFFSET $offset")
+    }
+
+    companion object {
+        fun rand(rand: Random, dataSources: List<DataSource>) =
+            if (rand.nextBoolean()) Limit(Expr.rand(rand, dataSources), Expr.rand(rand, dataSources))
+            else Limit(Expr.rand(rand, dataSources))
+    }
+}
