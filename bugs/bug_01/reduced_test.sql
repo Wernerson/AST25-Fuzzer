@@ -1,0 +1,6 @@
+CREATE TABLE t5 (t5_c1);
+CREATE TABLE t8 (t8_c2, t8_c3);
+INSERT INTO t8 VALUES (3, NULL);
+
+SELECT t8_c2 FROM t8 LEFT JOIN t5
+WHERE '' >= (t5_c1 AND 'x');
