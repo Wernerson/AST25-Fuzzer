@@ -1,12 +1,17 @@
 
 ```bash
-docker load < ./sqlite3-test.tar
+sudo podman load < ./sqlite3-test.tar
 ```
 
 ```bash
-docker run -it localhost/latest
+sudo podman run -v .sudo podman:/home/test -it localhost/latest
 ```
 
 ```bash
+sudo podman build . -t fuzzer
+sudo podman run -it fuzzer
+```
 
+```bash
+sudo podman run -it alpine/sqlite test.db
 ```
