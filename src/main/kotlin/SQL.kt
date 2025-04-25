@@ -59,9 +59,8 @@ class Select(
     }
 
     companion object {
-        fun rand(
-            rand: Random, dataSources: List<DataSource>, depth: Int = 0
-        ): Pair<Select, List<DataSource>> {
+        fun rand(rand: Random, dataSources: List<DataSource>) = rand(rand, dataSources, 0).first.toString()
+        fun rand(rand: Random, dataSources: List<DataSource>, depth: Int): Pair<Select, List<DataSource>> {
             val (from, dataSources) = From.rand(rand, dataSources, depth)
             val where = if (rand.nextBoolean()) Where.rand(rand, dataSources) else null
 
