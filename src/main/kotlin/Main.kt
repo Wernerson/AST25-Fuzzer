@@ -26,6 +26,11 @@ class Config(parser: ArgParser) {
         help = "Path to test oracle",
     ).default("/usr/bin/sqlite3-3.39.4")
 
+    val bugDir by parser.storing(
+        "--bug-dir",
+        help = "Path to directory where bugs are stored",
+    ).default(".docker/")
+
     val seed by parser.storing(
         "--seed", "-s",
         help = "Seed for randomness for reproducibility"
