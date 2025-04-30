@@ -12,20 +12,21 @@ import kotlin.random.Random
 private const val NOT_TERMINATED = -69420 // random special code for non-termination
 private val IGNORED_CODES = listOf(NOT_TERMINATED, 1, 0) // 1 = Syntax error, 0 = Success
 
-fun runSql(
-    sqlitePath: String,
-    sql: String,
-    workDir: String
+fun runCmd(
+    cmd: String,
+    args: String,
+    input: String? = null,
+    workDir: String = "."
 ): Triple<Int, String, String> {
     // create process
-    val proc = ProcessBuilder(sqlitePath, "test.db")
+    val proc = ProcessBuilder(cmd, args)
         .directory(File(workDir))
         .redirectOutput(ProcessBuilder.Redirect.PIPE)
         .redirectError(ProcessBuilder.Redirect.PIPE)
         .start()
     // write sql as input
     proc.outputStream.bufferedWriter().use {
-        it.write(sql)
+        if (input != null) it.write(input)
     }
     // wait for result
     val finished = proc.waitFor(5, TimeUnit.SECONDS)
@@ -40,16 +41,41 @@ fun runSql(
     }
 }
 
+fun runSql(
+    sqlitePath: String,
+    sql: String,
+    workDir: String
+): Triple<Int, String, String> = runCmd(sqlitePath, "test.db", sql, workDir)
+
 fun store(
     workDir: String,
-    bugDir: String,
+    config: Config,
     caseNumber: Int,
-    query: String,
+    query: String
 ) {
-    val dir = "$bugDir/bug_$caseNumber"
+    val dir = "${config.bugDir}/bug_$caseNumber"
+    val (_, testVersion, _) = runCmd(config.testPath, "--version")
+    val (_, oracleVersion, _) = runCmd(config.oraclePath, "--version")
+    val checkFile = object {}.javaClass.getResource("/check.sh")!!
+        .readText()
+        .replace("\${TEST_PATH}", config.testPath)
+        .replace("\${ORACLE_PATH}", config.oraclePath)
+
+    val readme = object {}.javaClass.getResource("/README.md")!!
+        .readText()
+        .replace("\${TEST_VERSION}", testVersion)
+        .replace("\${ORACLE_VERSION}", oracleVersion)
+
     File(dir).mkdirs()
     File("$workDir/test.db").copyTo(File("$dir/test.db"))
     File("$dir/original_test.sql").writeText(query)
+    File("$dir/reduced_test.sql").writeText(query)
+    File("$dir/version.txt").writeText(testVersion)
+    File("$dir/README.md").writeText(readme)
+    File("$dir/check.sh").apply {
+        writeText(checkFile)
+        setExecutable(true)
+    }
 }
 
 fun test(config: Config) {
@@ -74,13 +100,13 @@ fun test(config: Config) {
 
         if (testCode !in IGNORED_CODES) {
             println("Interesting return code in test case #$i! $testCode $testErr")
-            store(workDir, config.bugDir, i, query)
+            store(workDir, config, i, query)
         } else if (testCode == 0 && testOut != oracleOut) {
             println("Unequal output, comparing test case #$i...")
             val diff = compareResults(testOut, oracleOut)
             if (diff) {
                 println("Found differences!")
-                store(workDir, config.bugDir, i, query)
+                store(workDir, config, i, query)
             } else println("False alarm.")
         }
     }
