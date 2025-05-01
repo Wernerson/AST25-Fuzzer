@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("com.xenomachina:kotlin-argparser:2.0.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-cli-jvm:0.3.6")
     implementation("me.tongfei:progressbar:0.10.1")
 }
 

@@ -5,6 +5,7 @@ import kotlin.random.nextInt
 
 // https://sqlite.org/lang_select.html
 // https://sqlite.org/src/rptview?rn=7
+// https://sqlite.org/src/tktview/4e8e4857d3
 
 private const val MAX_QUERY_DEPTH = 5
 private const val MAX_EXPR_DEPTH = 10
