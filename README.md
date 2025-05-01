@@ -13,7 +13,7 @@ sudo podman run -it fuzzer
 ```
 
 ```bash
-sudo podman run -it alpine/sqlite test.db
+sudo podman run -v .docker/:/tmp -it alpine/sqlite /tmp/test.db
 ```
 
 ```bash
