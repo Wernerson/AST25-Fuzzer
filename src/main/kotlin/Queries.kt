@@ -9,7 +9,6 @@ class QueriesTask : BasicQueryTask("queries", "Generate just queries.") {
         val dataSources = createDataSources(rand, 10..20)
         val createSql = createDatabase(rand, dataSources)
         println(createSql)
-        println("Queries:")
 
         for (i in 0..numberOfQueries) {
             println(Select.rand(rand, dataSources))
