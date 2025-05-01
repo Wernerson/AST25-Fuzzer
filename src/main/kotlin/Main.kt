@@ -9,6 +9,7 @@ fun main(args: Array<String>) {
     val parser = ArgParser("fuzzer")
     val compare = CompareTask()
     val crash = CrashTask()
-    parser.subcommands(compare, crash)
+    val queries = QueriesTask()
+    parser.subcommands(compare, crash, queries)
     parser.parse(args)
 }

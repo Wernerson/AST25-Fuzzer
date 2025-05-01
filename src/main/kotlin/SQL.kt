@@ -287,15 +287,30 @@ sealed interface Expr {
         }
     }
 
+    class TupleExpr(
+        val exprs: List<Expr>
+    ) : Expr {
+        override fun toString() = exprs.joinToString(prefix = "(", postfix = ")")
+
+        companion object {
+            fun rand(
+                rand: Random, dataSources: List<DataSource>, depth: Int, noAlias: Boolean
+            ) = TupleExpr(List(rand.nextInt(1..5)) {
+                Expr.rand(rand, dataSources, depth, noAlias)
+            })
+        }
+    }
+
     companion object {
         fun rand(
             rand: Random, dataSources: List<DataSource>, depth: Int = 0, noAlias: Boolean = false
-        ): Expr = if (depth < MAX_EXPR_DEPTH) when (rand.nextInt(1..5)) {
+        ): Expr = if (depth < MAX_EXPR_DEPTH) when (rand.nextInt(1..6)) {
             1 -> UnaryExpr.rand(rand, dataSources, depth + 1, noAlias)
             2 -> BinaryExpr.rand(rand, dataSources, depth + 1, noAlias)
             3 -> LiteralValue.rand(rand)
             4 -> FunctionCall.rand(rand, dataSources, depth + 1, noAlias)
             5 -> TableColumn.rand(rand, dataSources, noAlias) ?: LiteralValue.rand(rand)
+            6 -> TupleExpr.rand(rand, dataSources, depth, noAlias)
             else -> error("Random number out of bounds!")
         } else TableColumn.rand(rand, dataSources, noAlias) ?: LiteralValue.rand(rand)
     }
