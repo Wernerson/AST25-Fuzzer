@@ -8,7 +8,7 @@ import kotlin.random.nextInt
 // https://sqlite.org/src/tktview/4e8e4857d3
 
 private const val MAX_QUERY_DEPTH = 5
-private const val MAX_EXPR_DEPTH = 10
+private const val MAX_EXPR_DEPTH = 5
 
 fun createDatabase(rand: Random, dataSources: List<DataSource>) = buildString {
     dataSources.forEach { ds ->
@@ -20,9 +20,11 @@ fun createDatabase(rand: Random, dataSources: List<DataSource>) = buildString {
 
         // create index
         append("CREATE ")
-        if (rand.nextBoolean()) append("UNIQUE ")
+        if (rand.nextDouble() < 0.2) append("UNIQUE ")
         append("INDEX i${ds.name} ON ${ds.name} (")
-        append(Expr.rand(rand, listOf(ds), noAlias = true))
+        append(List(rand.nextInt(1..5)) {
+            Expr.rand(rand, listOf(ds), depth = 3, noAlias = true)
+        }.joinToString())
         // TODO WHERE?
         append(");")
         appendLine()
@@ -62,21 +64,31 @@ class Select(
     companion object {
         fun rand(rand: Random, dataSources: List<DataSource>) = rand(rand, dataSources, 0).first.toString()
         fun rand(rand: Random, dataSources: List<DataSource>, depth: Int): Pair<Select, List<DataSource>> {
-            val (from, dataSources) = From.rand(rand, dataSources, depth)
-            val where = if (rand.nextBoolean()) Where.rand(rand, dataSources) else null
+            val (from, selectedSources) = From.rand(rand, dataSources, depth)
+            val where = if (rand.nextBoolean()) Where.rand(rand, selectedSources) else null
 
             val resultCols = mutableListOf<ResultColumn>()
             val sources = mutableSetOf<DataSource>()
             for (i in 0..rand.nextInt(0..5)) {
-                val (resultColumn, dataSource) = ResultColumn.rand(rand, dataSources)
+                val (resultColumn, dataSource) = ResultColumn.rand(rand, selectedSources)
                 resultCols.add(resultColumn)
                 sources.add(dataSource)
             }
 
+            val groupBy = if (depth == 0) GroupBy.rand(rand, selectedSources) else null
+            val having = if (groupBy != null) Expr.rand(rand, selectedSources, 3) else null
+            val orderBy = if (depth == 0) OrderBy.rand(rand, selectedSources) else null
             val limit = Limit(Expr.LiteralValue("100"))
+
             return Pair(
                 Select(
-                    resultColumn = resultCols, from = from, where = where, limit = limit
+                    resultColumn = resultCols,
+                    from = from,
+                    where = where,
+                    groupBy = groupBy,
+                    having = having,
+                    orderBy = orderBy,
+                    limit = limit
                 ), sources.toList()
             )
         }
@@ -161,10 +173,10 @@ sealed interface From {
                     }
 
                     2 -> {
-                        val (select, dataSources) = Select.rand(rand, dataSources, depth + 1)
+                        val (select, selectedSources) = Select.rand(rand, dataSources, depth + 1)
                         val ai = rand.nextInt(1000..9999)
                         val alias = "sa$ai"
-                        Pair(Subquery(select, alias), DataSource(alias, dataSources.flatMap { it.columns }))
+                        Pair(Subquery(select, alias), DataSource(alias, selectedSources.flatMap { it.columns }))
                     }
 
                     else -> error("Random number out of bounds!")
@@ -214,7 +226,8 @@ private val TERNARY_OPS = listOf(
 )
 
 private val FUNCTIONS = listOf(
-    "abs" to 1, "changes" to 0, "hex" to 1, "ifnull" to 2, "length" to 1
+//    "changes" to 0, // indeterministic, cannot use in index
+    "abs" to 1, "hex" to 1, "ifnull" to 2, "length" to 1
 )
 
 sealed interface Expr {
@@ -287,30 +300,16 @@ sealed interface Expr {
         }
     }
 
-    class TupleExpr(
-        val exprs: List<Expr>
-    ) : Expr {
-        override fun toString() = exprs.joinToString(prefix = "(", postfix = ")")
-
-        companion object {
-            fun rand(
-                rand: Random, dataSources: List<DataSource>, depth: Int, noAlias: Boolean
-            ) = TupleExpr(List(rand.nextInt(1..5)) {
-                Expr.rand(rand, dataSources, depth, noAlias)
-            })
-        }
-    }
-
     companion object {
         fun rand(
-            rand: Random, dataSources: List<DataSource>, depth: Int = 0, noAlias: Boolean = false
-        ): Expr = if (depth < MAX_EXPR_DEPTH) when (rand.nextInt(1..6)) {
-            1 -> UnaryExpr.rand(rand, dataSources, depth + 1, noAlias)
-            2 -> BinaryExpr.rand(rand, dataSources, depth + 1, noAlias)
+            rand: Random, dataSources: List<DataSource>,
+            depth: Int = MAX_EXPR_DEPTH, noAlias: Boolean = false,
+        ): Expr = if (depth > 0) when (rand.nextInt(1..5)) {
+            1 -> UnaryExpr.rand(rand, dataSources, depth - 1, noAlias)
+            2 -> BinaryExpr.rand(rand, dataSources, depth - 1, noAlias)
             3 -> LiteralValue.rand(rand)
-            4 -> FunctionCall.rand(rand, dataSources, depth + 1, noAlias)
+            4 -> FunctionCall.rand(rand, dataSources, depth - 1, noAlias)
             5 -> TableColumn.rand(rand, dataSources, noAlias) ?: LiteralValue.rand(rand)
-            6 -> TupleExpr.rand(rand, dataSources, depth, noAlias)
             else -> error("Random number out of bounds!")
         } else TableColumn.rand(rand, dataSources, noAlias) ?: LiteralValue.rand(rand)
     }
@@ -327,8 +326,35 @@ class Where(val expr: Expr) {
     }
 }
 
-class GroupBy(val expr: List<Expr>)
-class OrderBy(val orderingTerms: List<String>)
+class GroupBy(val expr: List<Expr>) {
+    override fun toString() = expr.joinToString()
+
+    companion object {
+        fun rand(rand: Random, dataSources: List<DataSource>): GroupBy = GroupBy(
+            List(rand.nextInt(1..3)) {
+                Expr.TableColumn.rand(rand, dataSources, noAlias = true) ?: Expr.LiteralValue("1")
+            })
+    }
+}
+
+class OrderingTerm(val expr: Expr, val asc: Boolean) {
+    override fun toString() = "$expr ${if (asc) "ASC" else "DESC"}"
+
+    companion object {
+        fun rand(rand: Random, dataSources: List<DataSource>): OrderingTerm = OrderingTerm(
+            Expr.TableColumn.rand(rand, dataSources, noAlias = true) ?: Expr.LiteralValue("1"), rand.nextBoolean()
+        )
+    }
+}
+
+class OrderBy(val orderingTerms: List<OrderingTerm>) {
+    override fun toString() = orderingTerms.joinToString()
+
+    companion object {
+        fun rand(rand: Random, dataSources: List<DataSource>) = OrderBy(
+            List(rand.nextInt(1..3)) { OrderingTerm.rand(rand, dataSources) })
+    }
+}
 
 class Limit(
     val expr: Expr, val offset: Expr? = null
@@ -339,8 +365,9 @@ class Limit(
     }
 
     companion object {
-        fun rand(rand: Random, dataSources: List<DataSource>) =
-            if (rand.nextBoolean()) Limit(Expr.rand(rand, dataSources), Expr.rand(rand, dataSources))
-            else Limit(Expr.rand(rand, dataSources))
+        fun rand(rand: Random) = if (rand.nextBoolean()) Limit(
+            Expr.rand(rand, emptyList()), Expr.rand(rand, emptyList())
+        )
+        else Limit(Expr.rand(rand, emptyList()))
     }
 }
