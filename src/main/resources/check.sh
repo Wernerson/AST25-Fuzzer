@@ -8,8 +8,8 @@ diff <(${TEST_PATH} test.db < reduced_test.sql) <(${ORACLE_PATH} test.db < reduc
 
 if [ $? -eq 0 ]; then
   echo -e "${RED}No diff${NC}"
-  exit 0
+  exit 1
 else
   echo -e "${GREEN}Diff!${NC}"
-  exit 1
+  exit 0
 fi
