@@ -8,4 +8,4 @@ RUN sudo apt install wget -y && \
     make sqlite3 && \
     sudo cp ./sqlite3 /usr/bin/sqlite3-3.44.4
 
-COPY ./build/native/nativeCompile/AST-fuzzer /home/test/fuzzer
+COPY ./build/native/nativeCompile/AST-fuzzer /usr/bin/test-db
