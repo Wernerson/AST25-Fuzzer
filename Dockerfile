@@ -4,8 +4,8 @@ RUN sudo apt install wget -y && \
     tar xzf version-3.44.4.tar.gz && \
     mkdir bld && \
     cd bld && \
-    ../sqlite-version-3.44.4/configure && \
-    make && \
+    ../sqlite-version-3.44.4/configure --enable-gcov && \
+    make sqlite3 && \
     sudo cp ./sqlite3 /usr/bin/sqlite3-3.44.4
 
 COPY ./build/native/nativeCompile/AST-fuzzer /home/test/fuzzer
