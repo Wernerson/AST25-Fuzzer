@@ -3,6 +3,8 @@ package net.sebyte.gen
 import net.sebyte.ast.*
 import kotlin.random.Random
 
+private val ALPHABET = ('a'..'z').toList() + ('A'..'Z').toList()
+
 data class Function(
     val name: String,
     val parameters: List<DataType>,
@@ -19,7 +21,7 @@ class ExprGenerator(
         add { LiteralValue.BlobLiteral(r.nextBytes(10)) }
         add {
             LiteralValue.StringLiteral(
-                listOf(5..10, 'a'..'z').joinToString("", prefix = "\"", postfix = "\"")
+                listOf(5..10, ALPHABET).joinToString("", prefix = "\"", postfix = "\"")
             )
         }
 
@@ -41,7 +43,56 @@ class ExprGenerator(
     )
 
     fun functionCall(): FunctionCall = oneOf(
-        Function("abs", listOf(DataType.REAL), DataType.REAL)
+        Function("abs", listOf(DataType.REAL), DataType.REAL),
+        Function("abs", listOf(DataType.INTEGER), DataType.INTEGER),
+        Function("changes", listOf(), DataType.INTEGER, false),
+        Function("char", listOf(3..10) { DataType.INTEGER }, DataType.TEXT),
+        Function("coalesce", listOf(2..10) { oneOf(DataType.entries) }, DataType.TEXT),
+        Function("concat", listOf(0..10) { oneOf(DataType.entries) }, DataType.TEXT),
+        Function("concat_ws", listOf(1..10) { oneOf(DataType.entries) }, DataType.TEXT),
+        Function("format", listOf(1..10) { oneOf(DataType.entries) }, DataType.TEXT),
+        Function("glob", listOf(DataType.TEXT, DataType.TEXT), DataType.INTEGER),
+        Function("hex", listOf(DataType.BLOB), DataType.TEXT),
+        Function("ifnull", listOf(2..2) { oneOf(DataType.entries) }, DataType.INTEGER),
+        Function("iif", listOf(DataType.INTEGER, DataType.INTEGER), DataType.INTEGER),
+        Function("if", listOf(DataType.INTEGER, DataType.INTEGER), DataType.INTEGER),
+        Function("instr", listOf(DataType.TEXT, DataType.TEXT), DataType.INTEGER),
+        Function("last_insert_rowid", listOf(), DataType.INTEGER, false),
+        Function("length", listOf(DataType.TEXT), DataType.INTEGER),
+        Function("like", listOf(2..3, DataType.TEXT), DataType.INTEGER),
+//        Function("likelihood", listOf(DataType.TEXT), DataType.INTEGER),
+        Function("likely", listOf(1..1){ oneOf(DataType.entries) }, DataType.INTEGER, false),
+//        Function("load_extension", listOf(1..2, DataType.TEXT), DataType.INTEGER, false),
+        Function("lower", listOf(DataType.TEXT), DataType.TEXT),
+        Function("ltrim", listOf(1..2, DataType.TEXT), DataType.TEXT),
+        Function("max", listOf(1..5, DataType.INTEGER), DataType.INTEGER),
+        Function("max", listOf(1..5, DataType.REAL), DataType.REAL),
+        Function("min", listOf(1..5, DataType.INTEGER), DataType.INTEGER),
+        Function("min", listOf(1..5, DataType.REAL), DataType.REAL),
+        Function("nullif", listOf(2..2) { oneOf(DataType.entries) }, DataType.INTEGER),
+        Function("octet_length", listOf(DataType.TEXT), DataType.INTEGER),
+        Function("printf", listOf(1..5, DataType.TEXT), DataType.TEXT),
+        Function("quote", listOf(DataType.TEXT), DataType.TEXT),
+        Function("random", listOf(), DataType.INTEGER, false),
+        Function("randomblob", listOf(DataType.INTEGER), DataType.BLOB, false),
+        Function("replace", listOf(DataType.TEXT, DataType.TEXT, DataType.TEXT), DataType.TEXT),
+        Function("round", listOf(DataType.REAL), DataType.REAL),
+        Function("round", listOf(DataType.REAL, DataType.INTEGER), DataType.REAL),
+        Function("rtrim", listOf(1..2, DataType.TEXT), DataType.TEXT),
+        Function("sign", listOf(1..1) { oneOf(DataType.INTEGER, DataType.REAL) }, DataType.INTEGER),
+        Function("soundex", listOf(DataType.TEXT), DataType.TEXT),
+        Function("sqlite_source_id", listOf(), DataType.TEXT),
+        Function("sqlite_version", listOf(), DataType.TEXT),
+        Function("substr", listOf(DataType.TEXT, DataType.INTEGER, DataType.INTEGER), DataType.TEXT),
+        Function("substring", listOf(DataType.TEXT, DataType.INTEGER, DataType.INTEGER), DataType.TEXT),
+        Function("total_changes", listOf(), DataType.INTEGER, false),
+        Function("trim", listOf(1..2, DataType.TEXT), DataType.TEXT),
+        Function("typeof", listOf(1..1){ oneOf(DataType.entries) }, DataType.TEXT),
+        Function("unhex", listOf(1..2, DataType.TEXT), DataType.BLOB),
+        Function("unicode", listOf(DataType.TEXT), DataType.INTEGER),
+        Function("unlikely", listOf(1..1){ oneOf(DataType.entries) }, DataType.INTEGER, false),
+        Function("upper", listOf(DataType.TEXT), DataType.TEXT),
+        Function("zeroblob", listOf(DataType.INTEGER), DataType.BLOB),
     ).let { (name, params) ->
         val args = params.map { expr() } // todo type it
         FunctionCall(name, args)
