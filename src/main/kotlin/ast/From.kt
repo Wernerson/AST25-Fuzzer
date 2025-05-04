@@ -9,12 +9,16 @@ class TableOrSubqueries(
 }
 
 sealed interface TableOrSubquery : Node {
-    class Table(
+    val alias: String?
+    fun aliased(alias: String): TableOrSubquery
+
+    data class Table(
         val schemaName: String? = null,
         val tableName: String,
-        val alias: String? = null,
-        val indexName: String? = null
+        val indexName: String? = null,
+        override val alias: String? = null
     ) : TableOrSubquery {
+        override fun aliased(alias: String) = copy(alias=alias)
         override fun toString() = buildString {
             if (schemaName != null) append("$schemaName.")
             append(tableName)
@@ -23,12 +27,13 @@ sealed interface TableOrSubquery : Node {
         }
     }
 
-    class TableFunctionCall(
+    data class TableFunctionCall(
         val schemaName: String? = null,
         val functionName: String,
         val args: List<Expr>,
-        val alias: String? = null,
+        override val alias: String? = null,
     ) : TableOrSubquery {
+        override fun aliased(alias: String) = copy(alias=alias)
         override fun toString() = buildString {
             if (schemaName != null) append("$schemaName.")
             append(functionName)
@@ -37,20 +42,26 @@ sealed interface TableOrSubquery : Node {
         }
     }
 
-    class Subquery(
+    data class Subquery(
         val select: Select,
-        val alias: String? = null
+        override val  alias: String? = null
     ) : TableOrSubquery {
+        override fun aliased(alias: String) = copy(alias=alias)
         override fun toString() = buildString {
             append("($select)")
             if (alias != null) append(" AS $alias")
         }
     }
 
-    class NestedFrom(
-        val nested: From
+    data class NestedFrom(
+        val nested: From,
+        override val alias: String? = null,
     ) : TableOrSubquery {
-        override fun toString() = "($nested)"
+        override fun aliased(alias: String) = copy(alias=alias)
+        override fun toString() = buildString {
+            append("($nested)")
+            if (alias != null) append(" AS $alias")
+        }
     }
 }
 

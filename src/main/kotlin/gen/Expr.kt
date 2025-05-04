@@ -12,21 +12,32 @@ private data class Function(
     val deterministic: Boolean = true
 )
 
+sealed interface DataEntry {
+    data class ScopedColumn(
+        val scope: String,
+        val name: String,
+    ) : DataEntry
+
+    data class Column(val name: String) : DataEntry
+}
+
+typealias DataSet = List<DataEntry>
+
 class ExprGenerator(
     r: Random,
-    private val input: DataSources,
+    private val input: DataSet,
     private val depth: Int = 5,
     private val onlyDeterministic: Boolean = false
 ) : Generator(r) {
 
     fun with(
         depth: Int = this.depth,
-        input: DataSources = this.input,
+        input: DataSet = this.input,
         onlyDeterministic: Boolean = this.onlyDeterministic
     ) = ExprGenerator(r, input, depth, onlyDeterministic)
 
     companion object {
-        fun constExprGenerator(r: Random) = ExprGenerator(r, emptyMap())
+        fun constExprGenerator(r: Random) = ExprGenerator(r, emptyList())
     }
 
     fun expr(): Expr = oneOf {
@@ -59,8 +70,11 @@ class ExprGenerator(
     }
 
     fun tableColumn(): TableColumn = oneOf(
-        input.flatMap { (table, columns) ->
-            columns.map { TableColumn(table = table, column = it) }
+        input.map {
+            when (it) {
+                is DataEntry.ScopedColumn -> TableColumn(table = it.scope, column = it.name)
+                is DataEntry.Column -> TableColumn(column = it.name)
+            }
         }
     )
 
@@ -89,7 +103,8 @@ class ExprGenerator(
         Function("instr", listOf(DataType.TEXT, DataType.TEXT), DataType.INTEGER),
         Function("last_insert_rowid", listOf(), DataType.INTEGER, false),
         Function("length", listOf(DataType.TEXT), DataType.INTEGER),
-        Function("like", listOf(2..3, DataType.TEXT), DataType.INTEGER),
+        Function("like", listOf(DataType.TEXT, DataType.TEXT), DataType.INTEGER),
+//        Function("like", listOf(DataType.TEXT, DataType.TEXT, DataType.TEXT), DataType.INTEGER),
 //        Function("likelihood", listOf(DataType.TEXT), DataType.INTEGER),
         Function("likely", listOf(1..1) { oneOf(DataType.entries) }, DataType.INTEGER, false),
 //        Function("load_extension", listOf(1..2, DataType.TEXT), DataType.INTEGER, false),

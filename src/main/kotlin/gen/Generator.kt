@@ -3,8 +3,6 @@ package net.sebyte.gen
 import kotlin.random.Random
 import kotlin.random.nextInt
 
-typealias DataSources = Map<String?, List<String>>
-
 abstract class Generator(
     protected val r: Random
 ) {
