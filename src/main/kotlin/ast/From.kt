@@ -70,16 +70,22 @@ class JoinClause(
         val tableOrSubquery: TableOrSubquery,
         val constraint: JoinConstraint? = null,
     ) : Node {
-        override fun toString() = "$operator $tableOrSubquery $constraint"
+        override fun toString() = buildString {
+            if (operator != null) append("$operator ")
+            append(tableOrSubquery)
+            if (constraint != null) append(" $constraint")
+        }
     }
 
-    enum class JoinOperator : Node {
+    enum class JoinOperator(
+        val isNatural: Boolean = false
+    ) : Node {
         LEFT, RIGHT, FUll, INNER, CROSS,
         LEFT_OUTER, RIGHT_OUTER, FULL_OUTER,
-        NATURAL_LEFT, NATURAL_RIGHT, NATURAL_FUll, NATURAL_INNER,
-        NATURAL_LEFT_OUTER, NATURAL_RIGHT_OUTER, NATURAL_FUll_OUTER;
+        NATURAL_LEFT(true), NATURAL_RIGHT(true), NATURAL_FUll(true), NATURAL_INNER(true),
+        NATURAL_LEFT_OUTER(true), NATURAL_RIGHT_OUTER(true), NATURAL_FUll_OUTER(true);
 
-        override fun toString() = name.replace('_', ' ')
+        override fun toString() = name.replace('_', ' ') + " JOIN"
     }
 
     sealed interface JoinConstraint : Node {

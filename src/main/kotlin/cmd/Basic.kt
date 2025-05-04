@@ -1,8 +1,12 @@
-package net.sebyte
+package net.sebyte.tasks
 
 import kotlinx.cli.*
 import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarBuilder
+import net.sebyte.createDataSources
+import net.sebyte.createDatabase
+import net.sebyte.gen.SelectGenerator
+import net.sebyte.runSql
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -10,7 +14,7 @@ import java.util.stream.IntStream
 import kotlin.random.Random
 
 @OptIn(ExperimentalCli::class)
-abstract class BasicQueryTask(name: String, description: String) : Subcommand(name, description) {
+abstract class BasicQueryCommand(name: String, description: String) : Subcommand(name, description) {
     val numberOfQueries by option(
         ArgType.Int, "number-of-queries", "n",
         "Number of queries to generate"
@@ -21,7 +25,7 @@ abstract class BasicQueryTask(name: String, description: String) : Subcommand(na
     )
 }
 
-abstract class BasicTestTask(name: String, description: String) : BasicQueryTask(name, description) {
+abstract class BasicTestCommand(name: String, description: String) : BasicQueryCommand(name, description) {
     val testPath by argument(
         ArgType.String, "testPath", "Path to subject under test"
     ).optional().default("/usr/bin/sqlite3-3.26.0")
@@ -47,12 +51,13 @@ abstract class BasicTestTask(name: String, description: String) : BasicQueryTask
         File("$workDir/create.sql").writeText(createSql)
         runSql(testPath, createSql, workDir = workDir)
 
+        val selectGenerator = SelectGenerator(rand, dataSources)
         val pbb = ProgressBarBuilder()
             .setTaskName("Testing")
             .setUnit("tests", 1L)
             .showSpeed()
         for (i in ProgressBar.wrap(IntStream.range(1, numberOfQueries + 1), pbb)) {
-            val query = Select.rand(rand, dataSources)
+            val query = selectGenerator.select().toString()
             executeTest(query, i)
         }
 

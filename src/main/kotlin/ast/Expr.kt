@@ -16,20 +16,21 @@ sealed interface LiteralValue : Expr {
     }
 
     class StringLiteral(val value: String) : LiteralValue {
-        override fun toString() = value
+        override fun toString() = "'$value'"
     }
 
-    class BlobLiteral(val value: String) : LiteralValue {
-        @OptIn(ExperimentalStdlibApi::class)
-        constructor(bytes: ByteArray) : this("X'${bytes.toHexString()}'")
+    class BlobLiteral(val bytes: ByteArray) : LiteralValue {
 
-        override fun toString() = value
+        @OptIn(ExperimentalStdlibApi::class)
+        override fun toString() = "X'${bytes.toHexString()}'"
     }
 
     enum class Constants : LiteralValue {
-        NULL, TRUE, FALSE,
-        CURRENT_TIME, CURRENT_DATE,
-        CURRENT_TIMESTAMP
+        NULL, TRUE, FALSE
+    }
+
+    enum class Variables: LiteralValue {
+        CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP
     }
 }
 
@@ -55,8 +56,8 @@ class UnaryExpr(
         op: String? = null,
         val opLeft: Boolean = true
     ) {
-        TILDE("~"), PLUS("+"), MINUS("-"),
-        NOT, ISNULL, NOTNULL, NOT_NULL;
+        TILDE("~"), PLUS("+"), MINUS("-"), NOT,
+        ISNULL(opLeft = false), NOTNULL(opLeft = false), NOT_NULL(opLeft = false);
 
         val op = op ?: name.replace('_', ' ')
 

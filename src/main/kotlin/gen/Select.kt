@@ -5,8 +5,13 @@ import kotlin.random.Random
 
 class SelectGenerator(
     r: Random,
-    private val sources: DataSources
+    private val sources: DataSources,
+    private val depth: Int = 5
 ) : Generator(r) {
+
+    fun with(
+        depth: Int = this.depth
+    ) = SelectGenerator(r, sources, depth)
 
     private var input: DataSources = emptyMap()
 
@@ -26,7 +31,7 @@ class SelectGenerator(
         val operator = oneOf(JoinClause.JoinOperator.entries + null)
         val (tableOrSubquery, tables) = tableOrSubquery()
         val exprGenerator = ExprGenerator(r, tables)
-        val constraint = oneOf {
+        val constraint: JoinClause.JoinConstraint? = if (operator?.isNatural ?: true) null else oneOf {
             add { JoinClause.JoinConstraint.On(exprGenerator.expr()) }
             add {
                 val columnNames = tables.flatMap { it.value }
@@ -75,7 +80,7 @@ class SelectGenerator(
             from = from,
             where = exprGenerator.exprOrNull(0.2),
             groupBy = if (nextBoolean(0.2)) null else listOf(1..3) { exprGenerator.expr() },
-            having = exprGenerator.exprOrNull(0.2),
+            having = exprGenerator.exprOrNull(0.9),
             orderBy = if (nextBoolean(0.2)) null else listOf(1..3) { orderingTerm() },
             limit = if (nextBoolean(0.2)) null else limit()
         )

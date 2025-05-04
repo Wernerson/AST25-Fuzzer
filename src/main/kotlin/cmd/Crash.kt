@@ -1,8 +1,12 @@
-package net.sebyte
+package net.sebyte.tasks
 
-private val IGNORED_CODES = listOf(NOT_TERMINATED, 0) // 0 = Success
+import net.sebyte.NOT_TERMINATED
+import net.sebyte.runSql
+import kotlin.collections.iterator
 
-class CrashTask : BasicTestTask("crash", "Test a single test subject on crashes.") {
+private val IGNORED_CODES = listOf(NOT_TERMINATED, 0, 1) // 0 = Success, 1 = Syntax Error
+
+class CrashCommand : BasicTestCommand("crash", "Test a single test subject on crashes.") {
 
     val codes = mutableMapOf<Int, Int>()
 
@@ -26,7 +30,7 @@ class CrashTask : BasicTestTask("crash", "Test a single test subject on crashes.
         val (code, _, err) = runSql(testPath, query, workDir = workDir)
         codes[code] = codes.getOrDefault(code, 0)+1
 
-        if (code !in IGNORED_CODES && !err.startsWith("Error: near line")) {
+        if (code !in IGNORED_CODES) {
             println("Interesting return code found!")
             println("Query:")
             println(query)

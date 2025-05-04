@@ -1,14 +1,17 @@
-package net.sebyte
+package net.sebyte.tasks
 
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import kotlinx.cli.optional
+import net.sebyte.NOT_TERMINATED
+import net.sebyte.runCmd
+import net.sebyte.runSql
 import java.io.File
 
 
 private val IGNORED_CODES = listOf(NOT_TERMINATED, 1, 0) // 1 = Syntax error, 0 = Success
 
-class CompareTask : BasicTestTask("compare", "Compare test subject output with test oracle.") {
+class CompareCommand : BasicTestCommand("compare", "Compare test subject output with test oracle.") {
 
     val oraclePath by argument(
         ArgType.String, "oraclePath", "Path to test oracle"
