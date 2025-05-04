@@ -2,6 +2,7 @@ package net.sebyte.gen
 
 import net.sebyte.ast.*
 import kotlin.random.Random
+import kotlin.random.nextInt
 
 private val ALPHABET = ('a'..'z').toList() + ('A'..'Z').toList()
 
@@ -12,7 +13,7 @@ private data class Function(
     val deterministic: Boolean = true
 )
 
-sealed interface DataEntry {
+sealed interface DataEntry { // todo type this
     data class ScopedColumn(
         val scope: String,
         val name: String,
@@ -27,14 +28,16 @@ class ExprGenerator(
     r: Random,
     private val input: DataSet,
     private val depth: Int = 5,
-    private val onlyDeterministic: Boolean = false
+    private val onlyDeterministic: Boolean = false,
+    private val allowedTypes: List<DataType> = DataType.entries
 ) : Generator(r) {
 
     fun with(
         depth: Int = this.depth,
         input: DataSet = this.input,
-        onlyDeterministic: Boolean = this.onlyDeterministic
-    ) = ExprGenerator(r, input, depth, onlyDeterministic)
+        onlyDeterministic: Boolean = this.onlyDeterministic,
+        allowedTypes: List<DataType> = this.allowedTypes
+    ) = ExprGenerator(r, input, depth, onlyDeterministic, allowedTypes)
 
     companion object {
         fun constExprGenerator(r: Random) = ExprGenerator(r, emptyList())
@@ -44,8 +47,8 @@ class ExprGenerator(
         add(::literalValue)
         if (input.isNotEmpty()) add(::tableColumn)
         if (depth > 0) {
-            add(::unaryExpr)
-            add(::binaryExpr)
+            if (DataType.INTEGER in allowedTypes || DataType.REAL in allowedTypes) add(::unaryExpr)
+            if (DataType.INTEGER in allowedTypes || DataType.REAL in allowedTypes) add(::binaryExpr)
             add(::functionCall)
             add { Tuple(listOf(with(depth - 1).expr())) }
         }
@@ -57,16 +60,25 @@ class ExprGenerator(
         else expr()
 
     fun literalValue(): LiteralValue = oneOf {
-        add { LiteralValue.NumericLiteral(r.nextInt()) }
-        add { LiteralValue.BlobLiteral(r.nextBytes(10)) }
-        add {
+        if (DataType.INTEGER in allowedTypes) {
+            add { LiteralValue.NumericLiteral(r.nextInt(-10..10)) }
+            addAll(
+                listOf(
+                    { LiteralValue.Constants.TRUE },
+                    { LiteralValue.Constants.FALSE },
+                )
+            )
+        }
+        if (DataType.REAL in allowedTypes) add { LiteralValue.NumericLiteral(r.nextDouble()) }
+        if (DataType.BLOB in allowedTypes) add { LiteralValue.BlobLiteral(r.nextBytes(10)) }
+        if (DataType.TEXT in allowedTypes) add {
             LiteralValue.StringLiteral(
                 listOf(5..10, ALPHABET).joinToString("")
             )
         }
 
-        addAll(LiteralValue.Constants.entries.map { { it } })
-        if (!onlyDeterministic) addAll(LiteralValue.Variables.entries.map { { it } })
+        if (!onlyDeterministic) addAll(LiteralValue.Variables.entries.map { { it } }) // todo type this
+        add { LiteralValue.Constants.NULL }
     }
 
     fun tableColumn(): TableColumn = oneOf(
@@ -93,8 +105,8 @@ class ExprGenerator(
         Function("char", listOf(3..10) { DataType.INTEGER }, DataType.TEXT),
         Function("coalesce", listOf(2..10) { oneOf(DataType.entries) }, DataType.TEXT),
         Function("concat", listOf(1..10) { oneOf(DataType.entries) }, DataType.TEXT),
-        Function("concat_ws", listOf(2..10) { oneOf(DataType.entries) }, DataType.TEXT),
-        Function("format", listOf(1..10) { oneOf(DataType.entries) }, DataType.TEXT),
+//        Function("concat_ws", listOf(2..10) { oneOf(DataType.entries) }, DataType.TEXT),
+//        Function("format", listOf(1..10) { oneOf(DataType.entries) }, DataType.TEXT),
         Function("glob", listOf(DataType.TEXT, DataType.TEXT), DataType.INTEGER),
         Function("hex", listOf(DataType.BLOB), DataType.TEXT),
         Function("ifnull", listOf(2..2) { oneOf(DataType.entries) }, DataType.INTEGER),
@@ -116,7 +128,7 @@ class ExprGenerator(
         Function("min", listOf(2..5, DataType.REAL), DataType.REAL),
         Function("nullif", listOf(2..2) { oneOf(DataType.entries) }, DataType.INTEGER),
         Function("octet_length", listOf(DataType.TEXT), DataType.INTEGER),
-        Function("printf", listOf(1..5, DataType.TEXT), DataType.TEXT),
+//        Function("printf", listOf(1..5, DataType.TEXT), DataType.TEXT),
         Function("quote", listOf(DataType.TEXT), DataType.TEXT),
         Function("random", listOf(), DataType.INTEGER, false),
         Function("randomblob", listOf(DataType.INTEGER), DataType.BLOB, false),
@@ -139,10 +151,10 @@ class ExprGenerator(
         Function("upper", listOf(DataType.TEXT), DataType.TEXT),
         Function("zeroblob", listOf(DataType.INTEGER), DataType.BLOB),
     ).filter { !onlyDeterministic || it.deterministic }
+        .filter { (_, _, returnType) -> returnType in allowedTypes }
         .let { oneOf(it) }
         .let { (name, params) ->
-            val exprGen = with(depth - 1)
-            val args = params.map { exprGen.expr() } // todo type it
+            val args = params.map { with(depth - 1, allowedTypes = listOf(it)).expr() }
             FunctionCall(name, args)
         }
 }
