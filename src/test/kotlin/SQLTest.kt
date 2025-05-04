@@ -1,13 +1,11 @@
-import net.sebyte.Select
-import net.sebyte.createDataSources
-import net.sebyte.createDatabase
+import net.sebyte.gen.SelectGenerator
 import kotlin.random.Random
 
 fun main() {
-    val rand = Random.Default
-    val dataSources = createDataSources(rand)
-    println(createDatabase(rand, dataSources))
-    for(i in 1..100_000) {
-        println(Select.rand(rand, dataSources).first)
-    }
+    val r = Random.Default
+    val gen = SelectGenerator(r, mapOf(
+        "t1" to listOf("c11", "c12"),
+        "t2" to listOf("c21", "c22")
+    ))
+    for(i in 0..10) println(gen.select())
 }

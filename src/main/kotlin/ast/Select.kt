@@ -1,32 +1,16 @@
 package net.sebyte.ast
 
-fun main() {
-    println(Select(
-        flag = Select.Flag.DISTINCT,
-        resultColumns = listOf(
-            ResultColumn.Star
-        ),
-        from = TableOrSubqueries(listOf(TableOrSubquery.Table(tableName = "t1"))),
-        where = BinaryExpr(
-            FunctionCall("abs", listOf(LiteralValue.NumericLiteral(1))),
-            BinaryExpr.Op.EQUAL2,
-            TableColumn(table = "t1", column = "c1")
-        ),
-        orderBy = listOf(OrderingTerm(TableColumn(table = "t1", column = "c2")))
-    ))
-}
-
 class Select(
-    private val flag: Flag? = null,
-    private val resultColumns: List<ResultColumn>,
-    private val from: From? = null,
-    private val where: Expr? = null,
-    private val groupBy: List<Expr>? = null,
-    private val having: Expr? = null,
+    val flag: Flag? = null,
+    val resultColumns: ResultColumns,
+    val from: From? = null,
+    val where: Expr? = null,
+    val groupBy: List<Expr>? = null,
+    val having: Expr? = null,
     // TODO window
     // todo compound
-    private val orderBy: List<OrderingTerm>? = null,
-    private val limit: Limit? = null
+    val orderBy: List<OrderingTerm>? = null,
+    val limit: Limit? = null
 ) : Node {
     enum class Flag {
         DISTINCT, ALL
@@ -36,7 +20,7 @@ class Select(
         append("SELECT")
         if (flag != null) append(" $flag")
         append(" ")
-        append(resultColumns.joinToString())
+        append(resultColumns)
         if (from != null) append(" FROM $from")
         if (where != null) append(" WHERE $where")
         if (groupBy != null && groupBy.isNotEmpty()) {
@@ -53,34 +37,38 @@ class Select(
     }
 }
 
-sealed interface ResultColumn : Node {
+sealed interface ResultColumns : Node {
     class Expr(
-        private val expr: Expr,
-        private val alias: String? = null
-    ) : ResultColumn {
+        val expr: Expr,
+        val alias: String? = null
+    ) : Node {
         override fun toString() = buildString {
             append(expr)
             if (alias != null) append(" AS $alias")
         }
     }
 
-    object Star : ResultColumn {
+    class ExprList(val exprs: List<Expr>) : ResultColumns {
+        override fun toString() = exprs.joinToString()
+    }
+
+    object Star : ResultColumns {
         override fun toString() = "*"
     }
 
     class TableStar(
-        private val table: String
-    ) : ResultColumn {
+        val table: String
+    ) : ResultColumns {
         override fun toString() = "$table.*"
     }
 }
 
 class OrderingTerm(
-    private val expr: Expr,
-    private val collateName: String? = null,
-    private val direction: Direction? = null,
-    private val nulls: Nulls? = null
-): Node {
+    val expr: Expr,
+    val collateName: String? = null,
+    val direction: Direction? = null,
+    val nulls: Nulls? = null
+) : Node {
     enum class Direction { ASC, DESC }
     enum class Nulls { FIRST, LAST }
 
@@ -93,9 +81,9 @@ class OrderingTerm(
 }
 
 class Limit(
-    private val expr: Expr,
-    private val offset: Expr? = null
-): Node {
+    val expr: Expr,
+    val offset: Expr? = null
+) : Node {
     override fun toString() = buildString {
         append(expr)
         if (offset != null) append(" OFFSET $offset")

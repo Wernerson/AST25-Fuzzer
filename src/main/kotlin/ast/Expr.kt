@@ -1,21 +1,25 @@
 package net.sebyte.ast
 
+enum class DataType {
+    INTEGER, REAL, TEXT, BLOB
+}
+
 sealed interface Expr : Node
 
 sealed interface LiteralValue : Expr {
 
-    class NumericLiteral(private val value: String) : LiteralValue {
+    class NumericLiteral(val value: String) : LiteralValue {
         constructor(value: Int) : this("$value")
         constructor(value: Double) : this("$value")
 
         override fun toString() = value
     }
 
-    class StringLiteral(private val value: String) : LiteralValue {
+    class StringLiteral(val value: String) : LiteralValue {
         override fun toString() = value
     }
 
-    class BlobLiteral(private val value: String) : LiteralValue {
+    class BlobLiteral(val value: String) : LiteralValue {
         @OptIn(ExperimentalStdlibApi::class)
         constructor(bytes: ByteArray) : this("X'${bytes.toHexString()}'")
 
@@ -32,9 +36,9 @@ sealed interface LiteralValue : Expr {
 // todo bind-parameter
 
 class TableColumn(
-    private val schema: String? = null,
-    private val table: String? = null,
-    private val column: String
+    val schema: String? = null,
+    val table: String? = null,
+    val column: String
 ) : Expr {
     override fun toString() = buildString {
         if (schema != null) append("$schema.")
@@ -44,30 +48,30 @@ class TableColumn(
 }
 
 class UnaryExpr(
-    private val op: Op,
-    private val expr: Expr
+    val op: Op,
+    val expr: Expr
 ) : Expr {
     enum class Op(
         op: String? = null,
-        private val opLeft: Boolean = true
+        val opLeft: Boolean = true
     ) {
         TILDE("~"), PLUS("+"), MINUS("-"),
         NOT, ISNULL, NOTNULL, NOT_NULL;
 
-        private val op = op ?: name.replace('_', ' ')
+        val op = op ?: name.replace('_', ' ')
 
-        fun toString(expr: Expr) = if (opLeft) "$op$expr" else "$expr$op"
+        fun toString(expr: Expr) = if (opLeft) "$op $expr" else "$expr $op"
     }
 
     override fun toString() = op.toString(expr)
 }
 
 class BinaryExpr(
-    private val left: Expr,
-    private val op: Op,
-    private val right: Expr
+    val left: Expr,
+    val op: Op,
+    val right: Expr
 ) : Expr {
-    enum class Op(private val op: String? = null) {
+    enum class Op(val op: String? = null) {
         CONCAT("||"), EXTRACT("->"), EXTRACT2("->>"),
         TIMES("*"), DIV("/"), MOD("%"),
         PLUS("+"), MINUS("-"),
@@ -80,33 +84,33 @@ class BinaryExpr(
         override fun toString() = op ?: name.replace('_', ' ')
     }
 
-    override fun toString() = "$left$op$right"
+    override fun toString() = "$left $op $right"
 }
 
 class FunctionCall(
-    private val name: String,
-    private val args: List<Expr> // todo function args
+    val name: String,
+    val args: List<Expr> // todo function args
     // todo filter, over clause
 ) : Expr {
     override fun toString() = "$name${args.parentString()}"
 }
 
 class Tuple(
-    private val exprs: List<Expr>
+    val exprs: List<Expr>
 ) : Expr {
     override fun toString() = exprs.parentString()
 }
 
 class Cast(
-    private val expr: Expr,
-    private val typeName: String // todo
+    val expr: Expr,
+    val typeName: String // todo
 ) : Expr {
     override fun toString() = "CAST ($expr as $typeName)"
 }
 
 class Collate(
-    private val expr: Expr,
-    private val collationName: String
+    val expr: Expr,
+    val collationName: String
 ) : Expr {
     override fun toString() = "$expr COLLATE $collationName"
 }
