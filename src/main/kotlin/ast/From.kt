@@ -48,7 +48,7 @@ sealed interface TableOrSubquery : Node {
     ) : TableOrSubquery {
         override fun aliased(alias: String) = copy(alias=alias)
         override fun toString() = buildString {
-            append("($select)")
+            append("(${select.toString(false)})")
             if (alias != null) append(" AS $alias")
         }
     }

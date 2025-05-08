@@ -14,12 +14,13 @@ private data class Function(
 )
 
 sealed interface DataEntry { // todo type this
+    val name: String
     data class ScopedColumn(
         val scope: String,
-        val name: String,
+        override val name: String,
     ) : DataEntry
 
-    data class Column(val name: String) : DataEntry
+    data class Column(override val name: String) : DataEntry
 }
 
 typealias DataSet = List<DataEntry>

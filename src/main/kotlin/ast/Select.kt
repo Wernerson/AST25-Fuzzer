@@ -16,7 +16,9 @@ class Select(
         DISTINCT, ALL
     }
 
-    override fun toString() = buildString {
+    override fun toString() = toString(true)
+
+    fun toString(withSemi: Boolean) = buildString {
         append("SELECT")
         if (flag != null) append(" $flag")
         append(" ")
@@ -33,7 +35,7 @@ class Select(
             append(orderBy.joinToString())
         }
         if (limit != null) append(" LIMIT $limit")
-        append(";")
+        if (withSemi) append(";")
     }
 }
 
