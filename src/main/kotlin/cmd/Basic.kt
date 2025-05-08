@@ -4,6 +4,7 @@ import kotlinx.cli.*
 import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarBuilder
 import net.sebyte.cfg.GeneratorConfig
+import net.sebyte.cfg.SQLITE_v3_26_0
 import net.sebyte.cfg.SQLITE_v3_39_4
 import net.sebyte.cfg.SQLITE_v3_44_4
 import net.sebyte.createDataSources
@@ -36,13 +37,13 @@ abstract class BasicTask(name: String, description: String) : Subcommand(name, d
         get() = when (_config) {
             SQLiteConfig.v3_44_4 -> SQLITE_v3_44_4
             SQLiteConfig.v3_39_4 -> SQLITE_v3_39_4
-            SQLiteConfig.v3_26_0 -> SQLITE_v3_44_4
+            SQLiteConfig.v3_26_0 -> SQLITE_v3_26_0
         }
 }
 
 abstract class BasicQueryTask(name: String, description: String) : BasicTask(name, description) {
     val numberOfQueries by option(
-        ArgType.Int, "number-of-queries", "n",
+        ArgType.Int, "queries", "n",
         "Number of queries to generate"
     ).default(100_000)
 }
