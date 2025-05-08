@@ -11,7 +11,7 @@ import java.io.File
 
 private val IGNORED_CODES = listOf(NOT_TERMINATED, 1, 0) // 1 = Syntax error, 0 = Success
 
-class CompareCommand : BasicTestCommand("compare", "Compare test subject output with test oracle.") {
+class CompareTask : BasicTestTask("compare", "Compare test subject output with test oracle.") {
 
     val oraclePath by argument(
         ArgType.String, "oraclePath", "Path to test oracle"
@@ -40,8 +40,8 @@ class CompareCommand : BasicTestCommand("compare", "Compare test subject output 
         query: String
     ) {
         val dir = "$bugDir/bug_$caseNumber"
-        val (_, testVersion, _) = runCmd(testPath, "--version")
-        val (_, oracleVersion, _) = runCmd(oraclePath, "--version")
+        val (_, testVersion, _) = runCmd(listOf(testPath, "--version"))
+        val (_, oracleVersion, _) = runCmd(listOf(oraclePath, "--version"))
         val checkFile = javaClass.getResource("/check.sh")!!
             .readText()
             .replace("\${TEST_PATH}", testPath)

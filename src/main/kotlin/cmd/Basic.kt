@@ -14,18 +14,20 @@ import java.util.stream.IntStream
 import kotlin.random.Random
 
 @OptIn(ExperimentalCli::class)
-abstract class BasicQueryCommand(name: String, description: String) : Subcommand(name, description) {
-    val numberOfQueries by option(
-        ArgType.Int, "number-of-queries", "n",
-        "Number of queries to generate"
-    ).default(100_000)
-
+abstract class BasicTask(name: String, description: String) : Subcommand(name, description) {
     val seed by option(
         ArgType.Int, "seed", description = "Seed for randomness for reproducibility"
     )
 }
 
-abstract class BasicTestCommand(name: String, description: String) : BasicQueryCommand(name, description) {
+abstract class BasicQueryTask(name: String, description: String) : BasicTask(name, description) {
+    val numberOfQueries by option(
+        ArgType.Int, "number-of-queries", "n",
+        "Number of queries to generate"
+    ).default(100_000)
+}
+
+abstract class BasicTestTask(name: String, description: String) : BasicQueryTask(name, description) {
     val testPath by argument(
         ArgType.String, "testPath", "Path to subject under test"
     ).optional().default("/usr/bin/sqlite3-3.26.0")

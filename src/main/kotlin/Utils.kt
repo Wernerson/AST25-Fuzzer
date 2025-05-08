@@ -6,13 +6,12 @@ import java.util.concurrent.TimeUnit
 const val NOT_TERMINATED = -69420 // random special code for non-termination
 
 fun runCmd(
-    cmd: String,
-    args: String,
+    cmd: List<String>,
     input: String? = null,
     workDir: String = "."
 ): Triple<Int, String, String> {
     // create process
-    val proc = ProcessBuilder(cmd, args)
+    val proc = ProcessBuilder(cmd)
         .directory(File(workDir))
         .redirectOutput(ProcessBuilder.Redirect.PIPE)
         .redirectError(ProcessBuilder.Redirect.PIPE)
@@ -38,4 +37,4 @@ fun runSql(
     sqlitePath: String,
     sql: String,
     workDir: String
-): Triple<Int, String, String> = runCmd(sqlitePath, "test.db", sql, workDir)
+): Triple<Int, String, String> = runCmd(listOf(sqlitePath, "test.db"), sql, workDir)

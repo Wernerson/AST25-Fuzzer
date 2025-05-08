@@ -5,7 +5,7 @@ import net.sebyte.createDatabase
 import net.sebyte.gen.SelectGenerator
 import kotlin.random.Random
 
-class QueriesTask : BasicQueryCommand("queries", "Generate just queries.") {
+class QueriesTask : BasicQueryTask("queries", "Generate just queries.") {
 
     override fun execute() {
         val rand = seed?.let { Random(it) } ?: Random.Default
