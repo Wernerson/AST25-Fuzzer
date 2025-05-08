@@ -43,25 +43,25 @@ abstract class BasicTestTask(name: String, description: String) : BasicQueryTask
         private set
 
     override fun execute() {
-        val id = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss"))
-        rand = seed?.let { Random(it) } ?: Random.Default
-        val dataSources = createDataSources(rand, 10..20)
-        val createSql = createDatabase(rand, dataSources)
-
-        workDir = "./test_$id"
-        File(workDir).mkdirs()
-        File("$workDir/create.sql").writeText(createSql)
-        runSql(testPath, createSql, workDir = workDir)
-
-        val selectGenerator = SelectGenerator(rand, dataSources)
-        val pbb = ProgressBarBuilder()
-            .setTaskName("Testing")
-            .setUnit("tests", 1L)
-            .showSpeed()
-        for (i in ProgressBar.wrap(IntStream.range(1, numberOfQueries + 1), pbb)) {
-            val query = selectGenerator.select().toString()
-            executeTest(query, i)
-        }
+//        val id = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss"))
+//        rand = seed?.let { Random(it) } ?: Random.Default
+//        val dataSources = createDataSources(rand, 10..20)
+//        val createSql = createDatabase(rand, dataSources)
+//
+//        workDir = "./test_$id"
+//        File(workDir).mkdirs()
+//        File("$workDir/create.sql").writeText(createSql)
+//        runSql(testPath, createSql, workDir = workDir)
+//
+//        val selectGenerator = SelectGenerator(rand, dataSources)
+//        val pbb = ProgressBarBuilder()
+//            .setTaskName("Testing")
+//            .setUnit("tests", 1L)
+//            .showSpeed()
+//        for (i in ProgressBar.wrap(IntStream.range(1, numberOfQueries + 1), pbb)) {
+//            val query = selectGenerator.select().toString()
+//            executeTest(query, i)
+//        }
 
     }
 

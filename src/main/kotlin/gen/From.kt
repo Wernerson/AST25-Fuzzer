@@ -4,14 +4,14 @@ import net.sebyte.ast.From
 import net.sebyte.ast.JoinClause
 import net.sebyte.ast.TableOrSubqueries
 import net.sebyte.ast.TableOrSubquery
-import kotlin.random.Random
+import net.sebyte.cfg.GeneratorConfig
 import kotlin.random.nextInt
 
 class FromGenerator(
-    r: Random,
+    cfg: GeneratorConfig,
     private val tables: Tables,
-    private val depth: Int = 3
-) : Generator(r) {
+    private val depth: Int = cfg.maxFromDepth
+) : Generator(cfg) {
 
     fun tableOrSubquery(): Pair<TableOrSubquery, DataSet> = oneOf {
         add {
@@ -21,7 +21,7 @@ class FromGenerator(
 
         if (depth > 0) {
             add {
-                val selectGen = SelectGenerator(r, tables, depth - 1)
+                val selectGen = SelectGenerator(cfg, tables, depth - 1)
                 val subquery = selectGen.select()
                 val alias = "a${r.nextInt(100..999)}"
                 val dataset = selectGen.output.map { DataEntry.ScopedColumn(alias, it.name) }
@@ -37,9 +37,9 @@ class FromGenerator(
     }
 
     fun joinedClause(tableOrSubquery: TableOrSubquery, dataset: DataSet): JoinClause.JoinedClause {
-        val operator = oneOf(JoinClause.JoinOperator.entries)
+        val operator = oneOf(cfg.supportedJoinOperators)
         val constraint: JoinClause.JoinConstraint? = if (operator.isNatural) null else oneOf {
-            val exprGenerator = ExprGenerator(r, dataset)
+            val exprGenerator = ExprGenerator(cfg, dataset)
             add { JoinClause.JoinConstraint.On(exprGenerator.expr()) }
 //            add {
 //                val columnNames = tables.flatMap { it.value }

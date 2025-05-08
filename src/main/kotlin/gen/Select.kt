@@ -1,17 +1,17 @@
 package net.sebyte.gen
 
 import net.sebyte.ast.*
-import kotlin.random.Random
+import net.sebyte.cfg.GeneratorConfig
 
 typealias Tables = Map<String, List<String>>
 
 class SelectGenerator(
-    r: Random,
+    cfg: GeneratorConfig,
     private val tables: Tables,
-    private val depth: Int = 3
-) : Generator(r) {
+    private val depth: Int = cfg.maxSelectDepth
+) : Generator(cfg) {
 
-    private val constExprGenerator = ExprGenerator.constExprGenerator(r)
+    private val constExprGenerator = ExprGenerator.constExprGenerator(cfg)
     private lateinit var exprGenerator: ExprGenerator
     lateinit var input: DataSet; private set
     lateinit var output: DataSet; private set
@@ -20,31 +20,31 @@ class SelectGenerator(
         expr = exprGenerator.expr(),
         collateName = null, // todo
         direction = oneOf(OrderingTerm.Direction.entries + null),
-        nulls = oneOf(OrderingTerm.Nulls.entries + null)
+        nulls = if (cfg.orderNulls) oneOf(OrderingTerm.Nulls.entries + null) else null
     )
 
     fun limit(): Limit {
         val exprGenerator = constExprGenerator.with(allowedTypes = listOf(DataType.INTEGER))
         return Limit(
             expr = exprGenerator.expr(),
-            offset = exprGenerator.exprOrNull(0.5)
+            offset = exprGenerator.exprOrNull(cfg.offsetPct)
         )
     }
 
     fun select(): Select {
-        val (from, dataset) = FromGenerator(r, tables, depth).from()
+        val (from, dataset) = FromGenerator(cfg, tables, depth).from()
         input = dataset
-        exprGenerator = ExprGenerator(r, input)
+        exprGenerator = ExprGenerator(cfg, input)
         output = dataset
         return Select(
             flag = oneOf(Select.Flag.DISTINCT, Select.Flag.ALL, null),
             resultColumns = ResultColumns.Star,
             from = from,
-            where = exprGenerator.exprOrNull(0.2),
-            groupBy = if (nextBoolean(0.2)) null else listOf(1..3) { exprGenerator.expr() },
-//            having = exprGenerator.exprOrNull(0.9),
-            orderBy = if (nextBoolean(0.2)) null else listOf(1..3) { orderingTerm() },
-            limit = if (nextBoolean(0.2)) null else limit()
+            where = exprGenerator.exprOrNull(cfg.wherePct),
+            groupBy = if (nextBoolean(cfg.groupByPct)) listOf(1..3) { exprGenerator.expr() } else null,
+            having = exprGenerator.exprOrNull(cfg.havingPct),
+            orderBy = if (nextBoolean(cfg.orderByPct)) listOf(1..3) { orderingTerm() } else null,
+            limit = if (nextBoolean(cfg.limitPct)) limit() else null
         )
     }
 }

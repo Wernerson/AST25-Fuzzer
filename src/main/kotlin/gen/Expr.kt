@@ -1,7 +1,7 @@
 package net.sebyte.gen
 
 import net.sebyte.ast.*
-import kotlin.random.Random
+import net.sebyte.cfg.GeneratorConfig
 import kotlin.random.nextInt
 
 private val ALPHABET = ('a'..'z').toList() + ('A'..'Z').toList()
@@ -15,6 +15,7 @@ private data class Function(
 
 sealed interface DataEntry { // todo type this
     val name: String
+
     data class ScopedColumn(
         val scope: String,
         override val name: String,
@@ -26,22 +27,22 @@ sealed interface DataEntry { // todo type this
 typealias DataSet = List<DataEntry>
 
 class ExprGenerator(
-    r: Random,
+    cfg: GeneratorConfig,
     private val input: DataSet,
-    private val depth: Int = 5,
+    private val depth: Int = cfg.maxExprDepth,
     private val onlyDeterministic: Boolean = false,
     private val allowedTypes: List<DataType> = DataType.entries
-) : Generator(r) {
+) : Generator(cfg) {
 
     fun with(
         depth: Int = this.depth,
         input: DataSet = this.input,
         onlyDeterministic: Boolean = this.onlyDeterministic,
         allowedTypes: List<DataType> = this.allowedTypes
-    ) = ExprGenerator(r, input, depth, onlyDeterministic, allowedTypes)
+    ) = ExprGenerator(cfg, input, depth, onlyDeterministic, allowedTypes)
 
     companion object {
-        fun constExprGenerator(r: Random) = ExprGenerator(r, emptyList())
+        fun constExprGenerator(cfg: GeneratorConfig) = ExprGenerator(cfg, emptyList())
     }
 
     fun expr(): Expr = oneOf {
@@ -56,13 +57,13 @@ class ExprGenerator(
         // todo tuple, cast collate
     }
 
-    fun exprOrNull(nullPct: Double) =
-        if (nextBoolean(nullPct)) null
-        else expr()
+    fun exprOrNull(nonNullPct: Double) =
+        if (nextBoolean(nonNullPct)) expr()
+        else null
 
     fun literalValue(): LiteralValue = oneOf {
         if (DataType.INTEGER in allowedTypes) {
-            add { LiteralValue.NumericLiteral(r.nextInt(-10..10)) }
+            add { LiteralValue.NumericLiteral(r.nextInt(cfg.literalIntRange)) }
             addAll(
                 listOf(
                     { LiteralValue.Constants.TRUE },
@@ -71,10 +72,10 @@ class ExprGenerator(
             )
         }
         if (DataType.REAL in allowedTypes) add { LiteralValue.NumericLiteral(r.nextDouble()) }
-        if (DataType.BLOB in allowedTypes) add { LiteralValue.BlobLiteral(r.nextBytes(10)) }
+        if (DataType.BLOB in allowedTypes) add { LiteralValue.BlobLiteral(r.nextBytes(cfg.literalBlobSize)) }
         if (DataType.TEXT in allowedTypes) add {
             LiteralValue.StringLiteral(
-                listOf(5..10, ALPHABET).joinToString("")
+                listOf(cfg.literalTextSizeRange, ALPHABET).joinToString("")
             )
         }
 
@@ -96,7 +97,7 @@ class ExprGenerator(
     )
 
     fun binaryExpr(): BinaryExpr = BinaryExpr(
-        with(depth - 1).expr(), oneOf(BinaryExpr.Op.entries), with(depth - 1).expr()
+        with(depth - 1).expr(), oneOf(cfg.supportedBinaryOps), with(depth - 1).expr()
     )
 
     fun functionCall(): FunctionCall = listOf(
@@ -151,7 +152,8 @@ class ExprGenerator(
         Function("unlikely", listOf(1..1) { oneOf(DataType.entries) }, DataType.INTEGER, false),
         Function("upper", listOf(DataType.TEXT), DataType.TEXT),
         Function("zeroblob", listOf(DataType.INTEGER), DataType.BLOB),
-    ).filter { !onlyDeterministic || it.deterministic }
+    ).filter { cfg.supports(it.name) }
+        .filter { !onlyDeterministic || it.deterministic }
         .filter { (_, _, returnType) -> returnType in allowedTypes }
         .let { oneOf(it) }
         .let { (name, params) ->

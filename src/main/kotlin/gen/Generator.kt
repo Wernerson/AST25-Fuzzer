@@ -1,11 +1,12 @@
 package net.sebyte.gen
 
-import kotlin.random.Random
+import net.sebyte.cfg.GeneratorConfig
 import kotlin.random.nextInt
 
 abstract class Generator(
-    protected val r: Random
+    protected val cfg: GeneratorConfig
 ) {
+    protected val r = cfg.r
     protected fun nextBoolean(pct: Double) = r.nextDouble() < pct
 
     protected fun <T> oneOf(options: Collection<T>): T = options.random(r)

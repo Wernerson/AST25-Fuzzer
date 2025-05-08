@@ -25,29 +25,29 @@ class CoverageTask : BasicTask(
 
     override fun execute() {
         val rand = seed?.let { Random(it) } ?: Random.Default
-        val dataSources = createDataSources(rand, 10..20)
-        val createSql = createDatabase(rand, dataSources)
+//        val dataSources = createDataSources(rand, 10..20)
+//        val createSql = createDatabase(rand, dataSources)
+//
+//        runSql("./sqlite3", createSql, workDir = ".")
+//        val baseline = getCoverage()
+//        println("Coverage baseline (no selects): $baseline")
+//        runSql("./sqlite3", "select 1;", workDir = ".")
+//        var coverage = getCoverage()
+//        println("Coverage (SELECT 1): $coverage")
 
-        runSql("./sqlite3", createSql, workDir = ".")
-        val baseline = getCoverage()
-        println("Coverage baseline (no selects): $baseline")
-        runSql("./sqlite3", "select 1;", workDir = ".")
-        var coverage = getCoverage()
-        println("Coverage (SELECT 1): $coverage")
+//        val generator = SelectGenerator(rand, dataSources)
+//        val queue = ArrayDeque<Select>(10)
+//        for (i in 0..10) queue.addLast(generator.select())
 
-        val generator = SelectGenerator(rand, dataSources)
-        val queue = ArrayDeque<Select>(10)
-        for (i in 0..10) queue.addLast(generator.select())
-
-        while(queue.isNotEmpty()) {
-            val select = queue.removeFirst()
-            runSql("./sqlite3", select.toString(), workDir = ".")
-            val cov = getCoverage()
-            if (cov > coverage) {
-                println("Increased coverage: $cov > $coverage")
-                // todo mutate select & readd
-            }
-            coverage = max(coverage, cov)
-        }
+//        while(queue.isNotEmpty()) {
+//            val select = queue.removeFirst()
+//            runSql("./sqlite3", select.toString(), workDir = ".")
+//            val cov = getCoverage()
+//            if (cov > coverage) {
+//                println("Increased coverage: $cov > $coverage")
+//                // todo mutate select & readd
+//            }
+//            coverage = max(coverage, cov)
+//        }
     }
 }

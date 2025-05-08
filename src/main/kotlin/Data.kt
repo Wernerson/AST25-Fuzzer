@@ -1,5 +1,6 @@
 package net.sebyte
 
+import net.sebyte.cfg.GeneratorConfig
 import net.sebyte.gen.DataEntry
 import net.sebyte.gen.Tables
 import net.sebyte.gen.ExprGenerator
@@ -7,7 +8,7 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 
 fun createDataSources(
-    rand: Random,
+    rand: Random, cfg: GeneratorConfig,
     noTables: IntRange = 5..10,
     noColumns: IntRange = 5..10,
 ): Tables = buildMap {
@@ -17,8 +18,8 @@ fun createDataSources(
     }
 }
 
-fun createDatabase(rand: Random, tables: Tables) = buildString {
-    val constExprGenerator = ExprGenerator.constExprGenerator(rand)
+fun createDatabase(rand: Random, cfg: GeneratorConfig, tables: Tables) = buildString {
+    val constExprGenerator = ExprGenerator.constExprGenerator(cfg)
     tables.forEach { (name, columns) ->
         // create table
         append("CREATE TABLE $name (")
@@ -28,7 +29,7 @@ fun createDatabase(rand: Random, tables: Tables) = buildString {
 
         // create index
         for (i in 1..rand.nextInt(0..4)) {
-            val exprGenerator = ExprGenerator(rand, columns.map { DataEntry.Column(it) }, onlyDeterministic = true)
+            val exprGenerator = ExprGenerator(cfg, columns.map { DataEntry.Column(it) }, onlyDeterministic = true)
             append("CREATE ")
             if (rand.nextDouble() < 0.2) append("UNIQUE ")
             append("INDEX i${name}_$i ON $name (")
