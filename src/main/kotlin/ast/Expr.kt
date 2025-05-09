@@ -4,20 +4,6 @@ enum class DataType {
     INTEGER, REAL, TEXT, BLOB
 }
 
-data class ExprType(
-    val allowedTypes: List<DataType>,
-    val nullable: Boolean
-) {
-    fun nullable() = copy(nullable = true)
-    fun nonNullable() = copy(nullable = false)
-
-    companion object {
-        val ANY = ExprType(DataType.entries, true)
-        val NUMERIC = ExprType(listOf(DataType.INTEGER, DataType.REAL), false)
-        val INTEGER = ExprType(listOf(DataType.INTEGER), false)
-    }
-}
-
 sealed interface Expr : Node
 
 sealed interface LiteralValue : Expr {

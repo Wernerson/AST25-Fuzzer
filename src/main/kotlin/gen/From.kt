@@ -16,7 +16,9 @@ class FromGenerator(
     fun tableOrSubquery(): Pair<TableOrSubquery, DataSet> = oneOf {
         add {
             val table = oneOf(tables.entries)
-            TableOrSubquery.Table(tableName = table.key) to table.value.map { DataEntry.ScopedColumn(table.key, it) }
+            TableOrSubquery.Table(tableName = table.key) to table.value.map { (name, type) ->
+                DataEntry.ScopedColumn(table.key, name, type)
+            }
         }
 
         if (depth > 0) {
@@ -24,7 +26,7 @@ class FromGenerator(
                 val selectGen = SelectGenerator(cfg, tables, depth - 1)
                 val subquery = selectGen.select()
                 val alias = "a${r.nextInt(100..999)}"
-                val dataset = selectGen.output.map { DataEntry.ScopedColumn(alias, it.name) }
+                val dataset = selectGen.output.map { DataEntry.ScopedColumn(alias, it.name, it.type) }
                 TableOrSubquery.Subquery(subquery, alias) to dataset
             }
 
@@ -39,7 +41,7 @@ class FromGenerator(
     fun joinedClause(tableOrSubquery: TableOrSubquery, dataset: DataSet): JoinClause.JoinedClause {
         val operator = oneOf(cfg.supportedJoinOperators)
         val constraint: JoinClause.JoinConstraint? = if (operator.isNatural) null else oneOf {
-            val exprGenerator = ExprGenerator(cfg, dataset)
+            val exprGenerator = ExprGenerator(cfg, dataset, exprType = ExprType.INTEGER)
             add { JoinClause.JoinConstraint.On(exprGenerator.expr()) }
 //            add {
 //                val columnNames = tables.flatMap { it.value }

@@ -15,13 +15,33 @@ private data class Function(
 
 sealed interface DataEntry { // todo type this
     val name: String
+    val type: DataType
 
     data class ScopedColumn(
         val scope: String,
         override val name: String,
+        override val type: DataType
     ) : DataEntry
 
-    data class Column(override val name: String) : DataEntry
+    data class Column(
+        override val name: String,
+        override val type: DataType
+    ) : DataEntry
+}
+
+data class ExprType(
+    val allowedTypes: List<DataType>,
+    val nullable: Boolean
+) {
+    fun nullable() = copy(nullable = true)
+    fun nonNullable() = copy(nullable = false)
+
+    companion object {
+        val ANY = ExprType(DataType.entries, true)
+        val INTEGER = ExprType(listOf(DataType.INTEGER), false)
+    }
+
+    fun allows(dataType: DataType) = dataType in allowedTypes
 }
 
 typealias DataSet = List<DataEntry>
@@ -31,15 +51,15 @@ class ExprGenerator(
     private val input: DataSet,
     private val depth: Int = cfg.maxExprDepth,
     private val onlyDeterministic: Boolean = false,
-    private val allowedTypes: List<DataType> = DataType.entries
+    private val exprType: ExprType = ExprType.ANY
 ) : Generator(cfg) {
 
     fun with(
         depth: Int = this.depth,
         input: DataSet = this.input,
         onlyDeterministic: Boolean = this.onlyDeterministic,
-        allowedTypes: List<DataType> = this.allowedTypes
-    ) = ExprGenerator(cfg, input, depth, onlyDeterministic, allowedTypes)
+        exprType: ExprType = this.exprType
+    ) = ExprGenerator(cfg, input, depth, onlyDeterministic, exprType)
 
     companion object {
         fun constExprGenerator(cfg: GeneratorConfig) = ExprGenerator(cfg, emptyList())
@@ -49,10 +69,12 @@ class ExprGenerator(
         add(::literalValue)
         if (input.isNotEmpty()) add(::tableColumn)
         if (depth > 0) {
-            if (DataType.INTEGER in allowedTypes || DataType.REAL in allowedTypes) add(::unaryExpr)
-            if (DataType.INTEGER in allowedTypes || DataType.REAL in allowedTypes) add(::binaryExpr)
+            if (exprType.allows(DataType.INTEGER) || exprType.allows(DataType.REAL)) {
+                add(::unaryExpr)
+                add(::binaryExpr)
+            }
             add(::functionCall)
-            add { Tuple(listOf(with(depth - 1).expr())) }
+//            add { Tuple(listOf(with(depth - 1).expr())) }
         }
         // todo tuple, cast collate
     }
@@ -62,7 +84,7 @@ class ExprGenerator(
         else null
 
     fun literalValue(): LiteralValue = oneOf {
-        if (DataType.INTEGER in allowedTypes) {
+        if (exprType.allows(DataType.INTEGER)) {
             add { LiteralValue.NumericLiteral(r.nextInt(cfg.literalIntRange)) }
             addAll(
                 listOf(
@@ -71,25 +93,26 @@ class ExprGenerator(
                 )
             )
         }
-        if (DataType.REAL in allowedTypes) add { LiteralValue.NumericLiteral(r.nextDouble()) }
-        if (DataType.BLOB in allowedTypes) add { LiteralValue.BlobLiteral(r.nextBytes(cfg.literalBlobSize)) }
-        if (DataType.TEXT in allowedTypes) add {
-            LiteralValue.StringLiteral(
-                listOf(cfg.literalTextSizeRange, ALPHABET).joinToString("")
-            )
+        if (exprType.allows(DataType.REAL)) add { LiteralValue.NumericLiteral(r.nextDouble()) }
+        if (exprType.allows(DataType.BLOB)) add { LiteralValue.BlobLiteral(r.nextBytes(cfg.literalBlobSize)) }
+        if (exprType.allows(DataType.TEXT)) {
+            if (!onlyDeterministic) addAll(LiteralValue.Variables.entries.map { { it } })
+            add {
+                LiteralValue.StringLiteral(
+                    listOf(cfg.literalTextSizeRange, ALPHABET).joinToString("")
+                )
+            }
         }
-
-        if (!onlyDeterministic) addAll(LiteralValue.Variables.entries.map { { it } }) // todo type this
-        add { LiteralValue.Constants.NULL }
+        if (exprType.nullable) add { LiteralValue.Constants.NULL }
     }
 
     fun tableColumn(): TableColumn = oneOf(
         input.map {
-            when (it) {
-                is DataEntry.ScopedColumn -> TableColumn(table = it.scope, column = it.name)
-                is DataEntry.Column -> TableColumn(column = it.name)
+                when (it) {
+                    is DataEntry.ScopedColumn -> TableColumn(table = it.scope, column = it.name)
+                    is DataEntry.Column -> TableColumn(column = it.name)
+                }
             }
-        }
     )
 
     fun unaryExpr(): UnaryExpr = UnaryExpr(
@@ -154,10 +177,10 @@ class ExprGenerator(
         Function("zeroblob", listOf(DataType.INTEGER), DataType.BLOB),
     ).filter { cfg.supports(it.name) }
         .filter { !onlyDeterministic || it.deterministic }
-        .filter { (_, _, returnType) -> returnType in allowedTypes }
+        .filter { (_, _, returnType) -> exprType.allows(returnType) }
         .let { oneOf(it) }
         .let { (name, params) ->
-            val args = params.map { with(depth - 1, allowedTypes = listOf(it)).expr() }
+            val args = params.map { with(depth - 1, exprType = ExprType(listOf(it), true)).expr() }
             FunctionCall(name, args)
         }
 }

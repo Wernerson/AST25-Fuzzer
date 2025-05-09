@@ -1,5 +1,6 @@
 package net.sebyte
 
+import net.sebyte.ast.DataType
 import net.sebyte.cfg.GeneratorConfig
 import net.sebyte.gen.DataEntry
 import net.sebyte.gen.ExprGenerator
@@ -12,7 +13,7 @@ fun createDataSources(
     noColumns: IntRange = 5..10,
 ): Tables = buildMap {
     for (i in 1..cfg.r.nextInt(noTables)) {
-        val columns = List(cfg.r.nextInt(noColumns)) { "t${i}_c$it" }
+        val columns = List(cfg.r.nextInt(noColumns)) { "t${i}_c$it" to DataType.entries.random(cfg.r) }
         put("t$i", columns)
     }
 }
@@ -22,13 +23,17 @@ fun createDatabase(cfg: GeneratorConfig, tables: Tables) = buildString {
     tables.forEach { (name, columns) ->
         // create table
         append("CREATE TABLE $name (")
-        append(columns.joinToString())
+        append(columns.joinToString { (name, _) -> name })
         append(");")
         appendLine()
 
         // create index
         for (i in 1..cfg.r.nextInt(0..4)) {
-            val exprGenerator = ExprGenerator(cfg, columns.map { DataEntry.Column(it) }, onlyDeterministic = true)
+            val exprGenerator = ExprGenerator(
+                cfg,
+                columns.map { (name, type) -> DataEntry.Column(name, type) },
+                onlyDeterministic = true
+            )
             append("CREATE ")
             if (cfg.r.nextDouble() < 0.2) append("UNIQUE ")
             append("INDEX i${name}_$i ON $name (")
