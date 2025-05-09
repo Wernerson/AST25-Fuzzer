@@ -4,25 +4,25 @@ import net.sebyte.cfg.GeneratorConfig
 import kotlin.random.nextInt
 
 abstract class Generator(
-    protected val cfg: GeneratorConfig
+    val cfg: GeneratorConfig
 ) {
-    protected val r = cfg.r
-    protected fun nextBoolean(pct: Double) = r.nextDouble() < pct
+    val r = cfg.r
+    fun nextBoolean(pct: Double) = r.nextDouble() < pct
 
-    protected fun <T> oneOf(options: Collection<T>): T = options.random(r)
-    protected fun <T> oneOf(vararg options: T): T = options.random(r)
+    fun <T> oneOf(options: Collection<T>): T = options.random(r)
+    fun <T> oneOf(vararg options: T): T = options.random(r)
 
-    protected inline fun <T> oneOf(
+    inline fun <T> oneOf(
         crossinline block: MutableList<() -> T>.() -> Unit
     ): T = buildList(block).random(r)()
 
-    protected fun <T> listOf(range: IntRange, options: Collection<T>): List<T> =
+    fun <T> listOf(range: IntRange, options: Collection<T>): List<T> =
         List(r.nextInt(range)) { options.random(r) }
 
-    protected fun <T> listOf(range: IntRange, vararg options: T): List<T> =
+    fun <T> listOf(range: IntRange, vararg options: T): List<T> =
         List(r.nextInt(range)) { options.random(r) }
 
-    protected inline fun <T> listOf(
+    inline fun <T> listOf(
         range: IntRange, crossinline block: (Int) -> T
     ): List<T> = List(r.nextInt(range), block)
 

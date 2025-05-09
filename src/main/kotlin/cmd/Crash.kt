@@ -8,7 +8,7 @@ private val IGNORED_CODES = listOf(NOT_TERMINATED, 0, 1) // 0 = Success, 1 = Syn
 
 class CrashTask : BasicTestTask("crash", "Test a single test subject on crashes.") {
 
-    val codes = mutableMapOf<Int, Int>()
+    private val codes = mutableMapOf<Int, Int>()
 
     override fun execute() {
         super.execute()

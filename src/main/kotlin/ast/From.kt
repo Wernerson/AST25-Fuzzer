@@ -27,21 +27,6 @@ sealed interface TableOrSubquery : Node {
         }
     }
 
-    data class TableFunctionCall(
-        val schemaName: String? = null,
-        val functionName: String,
-        val args: List<Expr>,
-        override val alias: String? = null,
-    ) : TableOrSubquery {
-        override fun aliased(alias: String) = copy(alias=alias)
-        override fun toString() = buildString {
-            if (schemaName != null) append("$schemaName.")
-            append(functionName)
-            append(args.parentString())
-            if (alias != null) append(" AS $alias")
-        }
-    }
-
     data class Subquery(
         val select: Select,
         override val  alias: String? = null
@@ -53,16 +38,31 @@ sealed interface TableOrSubquery : Node {
         }
     }
 
-    data class NestedFrom(
-        val nested: From,
-        override val alias: String? = null,
-    ) : TableOrSubquery {
-        override fun aliased(alias: String) = copy(alias=alias)
-        override fun toString() = buildString {
-            append("($nested)")
-            if (alias != null) append(" AS $alias")
-        }
-    }
+//    data class TableFunctionCall(
+//        val schemaName: String? = null,
+//        val functionName: String,
+//        val args: List<Expr>,
+//        override val alias: String? = null,
+//    ) : TableOrSubquery {
+//        override fun aliased(alias: String) = copy(alias=alias)
+//        override fun toString() = buildString {
+//            if (schemaName != null) append("$schemaName.")
+//            append(functionName)
+//            append(args.parentString())
+//            if (alias != null) append(" AS $alias")
+//        }
+//    }
+//
+//    data class NestedFrom(
+//        val nested: From,
+//        override val alias: String? = null,
+//    ) : TableOrSubquery {
+//        override fun aliased(alias: String) = copy(alias=alias)
+//        override fun toString() = buildString {
+//            append("($nested)")
+//            if (alias != null) append(" AS $alias")
+//        }
+//    }
 }
 
 

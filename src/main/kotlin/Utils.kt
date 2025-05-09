@@ -1,6 +1,7 @@
 package net.sebyte
 
 import java.io.File
+import java.util.Random
 import java.util.concurrent.TimeUnit
 
 const val NOT_TERMINATED = -69420 // random special code for non-termination

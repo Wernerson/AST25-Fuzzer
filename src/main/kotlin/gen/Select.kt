@@ -13,9 +13,8 @@ class SelectGenerator(
 ) : Generator(cfg) {
 
     private val constExprGenerator = ExprGenerator.constExprGenerator(cfg)
-    private lateinit var exprGenerator: ExprGenerator
 
-    fun orderingTerm(): OrderingTerm = OrderingTerm(
+    fun orderingTerm(exprGenerator: ExprGenerator): OrderingTerm = OrderingTerm(
         expr = exprGenerator.expr(),
         collateName = null, // todo
         direction = oneOf(OrderingTerm.Direction.entries + null),
@@ -49,7 +48,7 @@ class SelectGenerator(
     fun select(): Select = selectWithOutput().first
     fun selectWithOutput(): Pair<Select, DataSet> {
         val (from, input) = FromGenerator(cfg, tables, depth).from()
-        exprGenerator = ExprGenerator(cfg, input)
+        val exprGenerator = ExprGenerator(cfg, input)
         val (resultColumns, output) = resultColumns(input)
         val groupBy = if (nextBoolean(cfg.groupByPct)) {
             if (nextBoolean(0.8)) listOf(1..3) { TableColumn(column = oneOf(output).name) }
@@ -62,7 +61,7 @@ class SelectGenerator(
             where = exprGenerator.exprOrNull(cfg.wherePct),
             groupBy = groupBy,
             having = if (groupBy != null) exprGenerator.exprOrNull(cfg.havingPct) else null,
-            orderBy = if (nextBoolean(cfg.orderByPct)) listOf(1..3) { orderingTerm() } else null,
+            orderBy = if (nextBoolean(cfg.orderByPct)) listOf(1..3) { orderingTerm(exprGenerator) } else null,
             limit = if (nextBoolean(cfg.limitPct)) limit() else null
         ) to output
     }

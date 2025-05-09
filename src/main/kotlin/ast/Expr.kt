@@ -96,24 +96,24 @@ class FunctionCall(
     override fun toString() = "$name${args.parentString()}"
 }
 
-class Tuple(
-    val exprs: List<Expr>
-) : Expr {
-    override fun toString() = exprs.parentString()
-}
-
-class Cast(
-    val expr: Expr,
-    val typeName: String // todo
-) : Expr {
-    override fun toString() = "CAST ($expr as $typeName)"
-}
-
-class Collate(
-    val expr: Expr,
-    val collationName: String
-) : Expr {
-    override fun toString() = "$expr COLLATE $collationName"
-}
+//class Tuple(
+//    val exprs: List<Expr>
+//) : Expr {
+//    override fun toString() = exprs.parentString()
+//}
+//
+//class Cast(
+//    val expr: Expr,
+//    val typeName: String // todo
+//) : Expr {
+//    override fun toString() = "CAST ($expr as $typeName)"
+//}
+//
+//class Collate(
+//    val expr: Expr,
+//    val collationName: String
+//) : Expr {
+//    override fun toString() = "$expr COLLATE $collationName"
+//}
 
 // todo between, in, exists, case, regexp, etc.

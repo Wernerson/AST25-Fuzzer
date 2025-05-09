@@ -1,6 +1,5 @@
 FROM theosotr/sqlite3-test:latest
 RUN sudo apt install wget -y && \
-    mv sqlite/ sqlite3-3.26.0/ && \
     wget https://github.com/sqlite/sqlite/archive/refs/tags/version-3.44.4.tar.gz && \
     tar xzf version-3.44.4.tar.gz && \
     mkdir sqlite3-3.44.4 && \
