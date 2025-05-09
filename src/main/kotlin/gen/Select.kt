@@ -2,6 +2,7 @@ package net.sebyte.gen
 
 import net.sebyte.ast.*
 import net.sebyte.cfg.GeneratorConfig
+import kotlin.random.nextInt
 
 typealias Tables = Map<String, List<Pair<String, DataType>>>
 
@@ -30,15 +31,18 @@ class SelectGenerator(
     }
 
     fun resultColumns(input: DataSet): Pair<ResultColumns, DataSet> = oneOf {
-        add { ResultColumns.Star to input }
-//        add {
-//
-//            ResultColumns.ExprList(exprs = listOf(ResultColumns.Expr()))
-//        }
         add {
-            val table = oneOf(input)
-            ResultColumns.TableStar(table = table.scope) to input.filter { table.scope == it.scope }
+            val columns = listOf(1..input.size) { oneOf(input) }.map { "ca${r.nextInt(1000..9999)}" to it }
+            val exprs = columns.map { (alias, col) ->
+                ResultColumns.ResultExpr(expr = TableColumn(table = col.scope, column = col.name), alias = alias)
+            }
+            ResultColumns.ExprList(exprs) to columns.map { (alias, col) -> DataEntry(".", alias, col.type) }
         }
+//        add { ResultColumns.Star to input }
+//        add {
+//            val table = oneOf(input)
+//            ResultColumns.TableStar(table = table.scope) to input.filter { table.scope == it.scope }
+//        }
     }
 
     fun select(): Select = selectWithOutput().first

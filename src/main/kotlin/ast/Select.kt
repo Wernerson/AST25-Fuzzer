@@ -40,7 +40,7 @@ class Select(
 }
 
 sealed interface ResultColumns : Node {
-    class Expr(
+    class ResultExpr(
         val expr: Expr,
         val alias: String? = null
     ) : Node {
@@ -50,7 +50,7 @@ sealed interface ResultColumns : Node {
         }
     }
 
-    class ExprList(val exprs: List<Expr>) : ResultColumns {
+    class ExprList(val exprs: List<ResultExpr>) : ResultColumns {
         override fun toString() = exprs.joinToString()
     }
 
