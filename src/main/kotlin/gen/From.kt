@@ -16,17 +16,17 @@ class FromGenerator(
     fun tableOrSubquery(): Pair<TableOrSubquery, DataSet> = oneOf {
         add {
             val table = oneOf(tables.entries)
-            TableOrSubquery.Table(tableName = table.key) to table.value.map { (name, type) ->
-                DataEntry.ScopedColumn(table.key, name, type)
-            }
+            val alias = "ta${r.nextInt(1000..9999)}"
+            val dataset = table.value.map { (name, type) -> DataEntry(alias, name, type) }
+            TableOrSubquery.Table(tableName = table.key, alias = alias) to dataset
         }
 
         if (depth > 0) {
             add {
                 val selectGen = SelectGenerator(cfg, tables, depth - 1)
-                val subquery = selectGen.select()
-                val alias = "a${r.nextInt(100..999)}"
-                val dataset = selectGen.output.map { DataEntry.ScopedColumn(alias, it.name, it.type) }
+                val (subquery, output) = selectGen.selectWithOutput()
+                val alias = "sa${r.nextInt(1000..9999)}"
+                val dataset = output.map { DataEntry(alias, it.name, it.type) }
                 TableOrSubquery.Subquery(subquery, alias) to dataset
             }
 

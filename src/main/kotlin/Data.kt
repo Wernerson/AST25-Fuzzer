@@ -4,6 +4,7 @@ import net.sebyte.ast.DataType
 import net.sebyte.cfg.GeneratorConfig
 import net.sebyte.gen.DataEntry
 import net.sebyte.gen.ExprGenerator
+import net.sebyte.gen.ExprType
 import net.sebyte.gen.Tables
 import kotlin.random.nextInt
 
@@ -31,8 +32,10 @@ fun createDatabase(cfg: GeneratorConfig, tables: Tables) = buildString {
         for (i in 1..cfg.r.nextInt(0..4)) {
             val exprGenerator = ExprGenerator(
                 cfg,
-                columns.map { (name, type) -> DataEntry.Column(name, type) },
-                onlyDeterministic = true
+                columns.map { (col, type) -> DataEntry(name, col, type) },
+                exprType = ExprType(listOf(DataType.INTEGER, DataType.REAL, DataType.BLOB), true),
+                onlyDeterministic = true,
+                noScope = true
             )
             append("CREATE ")
             if (cfg.r.nextDouble() < 0.2) append("UNIQUE ")

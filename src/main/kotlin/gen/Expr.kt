@@ -13,29 +13,16 @@ private data class Function(
     val deterministic: Boolean = true
 )
 
-sealed interface DataEntry { // todo type this
-    val name: String
+data class DataEntry(
+    val scope: String,
+    val name: String,
     val type: DataType
-
-    data class ScopedColumn(
-        val scope: String,
-        override val name: String,
-        override val type: DataType
-    ) : DataEntry
-
-    data class Column(
-        override val name: String,
-        override val type: DataType
-    ) : DataEntry
-}
+)
 
 data class ExprType(
     val allowedTypes: List<DataType>,
     val nullable: Boolean
 ) {
-    fun nullable() = copy(nullable = true)
-    fun nonNullable() = copy(nullable = false)
-
     companion object {
         val ANY = ExprType(DataType.entries, true)
         val INTEGER = ExprType(listOf(DataType.INTEGER), false)
@@ -51,7 +38,8 @@ class ExprGenerator(
     private val input: DataSet,
     private val depth: Int = cfg.maxExprDepth,
     private val onlyDeterministic: Boolean = false,
-    private val exprType: ExprType = ExprType.ANY
+    private val exprType: ExprType = ExprType.ANY,
+    private val noScope: Boolean = false
 ) : Generator(cfg) {
 
     fun with(
@@ -59,7 +47,7 @@ class ExprGenerator(
         input: DataSet = this.input,
         onlyDeterministic: Boolean = this.onlyDeterministic,
         exprType: ExprType = this.exprType
-    ) = ExprGenerator(cfg, input, depth, onlyDeterministic, exprType)
+    ) = ExprGenerator(cfg, input, depth, onlyDeterministic, exprType, noScope)
 
     companion object {
         fun constExprGenerator(cfg: GeneratorConfig) = ExprGenerator(cfg, emptyList())
@@ -106,14 +94,10 @@ class ExprGenerator(
         if (exprType.nullable) add { LiteralValue.Constants.NULL }
     }
 
-    fun tableColumn(): TableColumn = oneOf(
-        input.map {
-                when (it) {
-                    is DataEntry.ScopedColumn -> TableColumn(table = it.scope, column = it.name)
-                    is DataEntry.Column -> TableColumn(column = it.name)
-                }
-            }
-    )
+    fun tableColumn(): TableColumn = oneOf(input).let {
+        if (noScope) TableColumn(column = it.name)
+        else TableColumn(table = it.scope, column = it.name)
+    }
 
     fun unaryExpr(): UnaryExpr = UnaryExpr(
         oneOf(UnaryExpr.Op.entries), with(depth - 1).expr()
