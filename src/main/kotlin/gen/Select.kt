@@ -38,6 +38,7 @@ class SelectGenerator(
             }
             ResultColumns.ExprList(exprs) to columns.map { (alias, col) -> DataEntry(".", alias, col.type) }
         }
+        // todo star and scoped star
 //        add { ResultColumns.Star to input }
 //        add {
 //            val table = oneOf(input)
@@ -51,7 +52,7 @@ class SelectGenerator(
         exprGenerator = ExprGenerator(cfg, input)
         val (resultColumns, output) = resultColumns(input)
         val groupBy = if (nextBoolean(cfg.groupByPct)) {
-            if (nextBoolean(0.8)) listOf(1..3) { TableColumn(column = oneOf(input).name) }
+            if (nextBoolean(0.8)) listOf(1..3) { TableColumn(column = oneOf(output).name) }
             else listOf(1..3) { exprGenerator.expr() }
         } else null
         return Select(

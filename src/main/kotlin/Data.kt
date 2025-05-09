@@ -32,10 +32,9 @@ fun createDatabase(cfg: GeneratorConfig, tables: Tables) = buildString {
         for (i in 1..cfg.r.nextInt(0..4)) {
             val exprGenerator = ExprGenerator(
                 cfg,
-                columns.map { (col, type) -> DataEntry(name, col, type) },
+                columns.map { (col, type) -> DataEntry(null, col, type) },
                 exprType = ExprType(listOf(DataType.INTEGER, DataType.REAL, DataType.BLOB), true),
                 onlyDeterministic = true,
-                noScope = true
             )
             append("CREATE ")
             if (cfg.r.nextDouble() < 0.2) append("UNIQUE ")

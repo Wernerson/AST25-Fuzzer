@@ -14,7 +14,7 @@ private data class Function(
 )
 
 data class DataEntry(
-    val scope: String,
+    val scope: String?,
     val name: String,
     val type: DataType
 )
@@ -38,8 +38,7 @@ class ExprGenerator(
     private val input: DataSet,
     private val depth: Int = cfg.maxExprDepth,
     private val onlyDeterministic: Boolean = false,
-    private val exprType: ExprType = ExprType.ANY,
-    private val noScope: Boolean = false
+    private val exprType: ExprType = ExprType.ANY
 ) : Generator(cfg) {
 
     fun with(
@@ -47,7 +46,7 @@ class ExprGenerator(
         input: DataSet = this.input,
         onlyDeterministic: Boolean = this.onlyDeterministic,
         exprType: ExprType = this.exprType
-    ) = ExprGenerator(cfg, input, depth, onlyDeterministic, exprType, noScope)
+    ) = ExprGenerator(cfg, input, depth, onlyDeterministic, exprType)
 
     companion object {
         fun constExprGenerator(cfg: GeneratorConfig) = ExprGenerator(cfg, emptyList())
@@ -94,10 +93,7 @@ class ExprGenerator(
         if (exprType.nullable) add { LiteralValue.Constants.NULL }
     }
 
-    fun tableColumn(): TableColumn = oneOf(input).let {
-        if (noScope) TableColumn(column = it.name)
-        else TableColumn(table = it.scope, column = it.name)
-    }
+    fun tableColumn(): TableColumn = oneOf(input).let { TableColumn(table = it.scope, column = it.name) }
 
     fun unaryExpr(): UnaryExpr = UnaryExpr(
         oneOf(UnaryExpr.Op.entries), with(depth - 1).expr()
