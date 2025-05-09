@@ -23,7 +23,7 @@ class SelectGenerator(
     )
 
     fun limit(): Limit {
-        val exprGenerator = constExprGenerator.with(exprType = ExprType.INTEGER)
+        val exprGenerator = constExprGenerator.with(exprType = ExprType.INTEGER, depth = 3)
         return Limit(
             expr = exprGenerator.expr(),
             offset = exprGenerator.exprOrNull(cfg.offsetPct)
@@ -38,7 +38,7 @@ class SelectGenerator(
             }
             ResultColumns.ExprList(exprs) to columns.map { (alias, col) -> DataEntry(".", alias, col.type) }
         }
-        // todo star and scoped star
+        // todo star and scoped star and group functions
 //        add { ResultColumns.Star to input }
 //        add {
 //            val table = oneOf(input)

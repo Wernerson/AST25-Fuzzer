@@ -22,8 +22,8 @@ class GeneratorConfig(
     val groupByPct: Double = 0.8,
     val havingPct: Double = 0.2,
     val orderByPct: Double = 0.8,
-    val limitPct: Double = 0.8,
-    val offsetPct: Double = 0.5
+    val limitPct: Double = 0.5,
+    val offsetPct: Double = 0.2
 ) {
     val r = seed?.let { Random(it) } ?: Random.Default
     val supportedBinaryOps = BinaryExpr.Op.entries.filter { it !in unsupportedOperators }

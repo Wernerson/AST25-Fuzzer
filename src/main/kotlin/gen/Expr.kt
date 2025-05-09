@@ -120,7 +120,7 @@ class ExprGenerator(
         Function("instr", listOf(DataType.TEXT, DataType.TEXT), DataType.INTEGER),
         Function("last_insert_rowid", listOf(), DataType.INTEGER, false),
         Function("length", listOf(DataType.TEXT), DataType.INTEGER),
-        Function("like", listOf(DataType.TEXT, DataType.TEXT), DataType.INTEGER),
+//        Function("like", listOf(DataType.TEXT, DataType.TEXT), DataType.INTEGER),
 //        Function("like", listOf(DataType.TEXT, DataType.TEXT, DataType.TEXT), DataType.INTEGER),
 //        Function("likelihood", listOf(DataType.TEXT), DataType.INTEGER),
         Function("likely", listOf(1..1) { oneOf(DataType.entries) }, DataType.INTEGER, false),
