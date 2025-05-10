@@ -4,6 +4,7 @@ import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import net.sebyte.*
 import net.sebyte.ast.Select
+import net.sebyte.cli.Logger
 import net.sebyte.gen.SelectGenerator
 import net.sebyte.mut.Mutator
 import kotlin.math.max
@@ -36,16 +37,16 @@ class CoverageTask : BasicTask(
         return coverage
     }
 
-    override fun execute() {
+    override fun run() {
         val dataSources = createDataSources(cfg, 10..20)
         val createSql = createDatabase(cfg, dataSources)
 
         runSql("./sqlite3", createSql, workDir = ".")
         val baseline = getCoverage()
-        println("Coverage baseline (no selects): $baseline")
+        Logger.info { "Coverage baseline (no selects): $baseline" }
         runSql("./sqlite3", "select 1;", workDir = ".")
         var coverage = getCoverage()
-        println("Coverage (SELECT 1): $coverage")
+        Logger.info { "Coverage (SELECT 1): $coverage" }
 
         val generator = SelectGenerator(cfg, dataSources)
         val queue = ArrayDeque<Select>(10)
@@ -55,34 +56,36 @@ class CoverageTask : BasicTask(
         while (queue.isNotEmpty()) {
             val query = queue.removeFirst()
             val (code, _, err) = runSql("./sqlite3", query.toString(), workDir = ".")
-            codes[code] = codes.getOrDefault(code, 0)+1
+            codes[code] = codes.getOrDefault(code, 0) + 1
 
-            if (code !in IGNORED_CODES) {
-                println("Interesting return code found!")
-                println("Query:")
-                println(query)
-                println("Code: $code, Err: $err\n")
-                println()
+            if (code !in IGNORED_CODES) Logger.info {
+                """
+                Interesting return code found!
+                Code: $code
+                Err: $err
+                Query:
+                $query       
+            """.trimIndent()
             }
 
             val cov = getCoverage()
             if (cov > coverage) {
-                println("Increased coverage: $cov > $coverage")
+                Logger.debug { "Increased coverage: $cov > $coverage" }
                 for (i in 0..mutations) queue.addLast(mutator.mutate(query))
             }
             coverage = max(coverage, cov)
         }
 
-        println("Final coverage: $coverage")
-        println("Error codes:")
-        for((code, count) in codes) {
-            val tag = when(code) {
+        Logger.info { "Final coverage: $coverage" }
+        Logger.info { "Error codes:" }
+        for ((code, count) in codes) {
+            val tag = when (code) {
                 0 -> "success"
                 1 -> "handled error"
                 NOT_TERMINATED -> "not terminated"
                 else -> "unknown"
             }
-            println("$code ($tag): $count")
+            Logger.info { "$code ($tag): $count" }
         }
     }
 }

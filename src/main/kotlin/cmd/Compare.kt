@@ -4,6 +4,7 @@ import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import kotlinx.cli.optional
 import net.sebyte.NOT_TERMINATED
+import net.sebyte.cli.Logger
 import net.sebyte.runCmd
 import net.sebyte.runSql
 import java.io.File
@@ -69,15 +70,15 @@ class CompareTask : BasicTestTask("compare", "Compare test subject output with t
         val (_, oracleOut, _) = runSql(oraclePath, query, workDir = workDir)
 
         if (testCode !in IGNORED_CODES) {
-            println("Interesting return code in test case #$caseNumber! $testCode $testErr")
+            Logger.info { "Interesting return code in test case #$caseNumber! $testCode $testErr" }
             store(workDir, caseNumber, query)
         } else if (testCode == 0 && testOut != oracleOut) {
-            println("Unequal output, comparing test case #$caseNumber...")
+            Logger.debug { "Unequal output, comparing test case #$caseNumber..." }
             val diff = compareResults(testOut, oracleOut)
             if (diff) {
-                println("Found differences!")
+                Logger.info { "Found differences!" }
                 store(workDir, caseNumber, query)
-            } else println("False alarm.")
+            } else Logger.debug { "False alarm." }
         }
     }
 
