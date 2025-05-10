@@ -66,7 +66,7 @@ class ExprGenerator(
         // todo tuple, cast collate
     }
 
-    fun exprOrNull(nonNullPct: Double) =
+    fun exprOrNull(nonNullPct: Double = 0.5) =
         if (nextBoolean(nonNullPct)) expr()
         else null
 
@@ -161,6 +161,7 @@ class ExprGenerator(
         .let { oneOf(it) }
         .let { (name, params) ->
             val args = params.map { with(depth - 1, exprType = ExprType(listOf(it), true)).expr() }
-            FunctionCall(name, args)
+            val filterWhere = if(nextBoolean(0.5)) expr() else null
+            FunctionCall(name, args, filterWhere)
         }
 }

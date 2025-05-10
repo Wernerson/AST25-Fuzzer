@@ -21,7 +21,9 @@ class Mutator(
         is TableColumn -> keep { e } mutate { expr() }
         is UnaryExpr -> keep { UnaryExpr(e.op, mutate(e.expr)) } mutate { expr() }
         is BinaryExpr -> keep { BinaryExpr(mutate(e.left), e.op, mutate(e.right)) } mutate { expr() }
-        is FunctionCall -> keep { FunctionCall(e.name, e.args.map { mutate(it) }) } mutate { expr() }
+        is FunctionCall -> keep {
+            FunctionCall(e.name, e.args.map { mutate(it) }, e.filterWhere?.let { mutate(it) } ?: exprOrNull())
+        } mutate { expr() }
     }
 
     fun FromGenerator.mutate(t: TableOrSubquery): TableOrSubquery = when (t) {
@@ -36,7 +38,8 @@ class Mutator(
             val exprGen = ExprGenerator.constExprGenerator(cfg).with(exprType = ExprType.INTEGER)
             when (j.constraint) {
                 is JoinClause.JoinConstraint.On -> JoinClause.JoinConstraint.On(exprGen.mutate(j.constraint.expr))
-                else -> null // todo
+                null -> exprGen.exprOrNull()?.let { JoinClause.JoinConstraint.On(it) }
+                is JoinClause.JoinConstraint.Using -> TODO()
             }
         }
     )

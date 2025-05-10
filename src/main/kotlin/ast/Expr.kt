@@ -90,10 +90,14 @@ class BinaryExpr(
 
 class FunctionCall(
     val name: String,
-    val args: List<Expr> // todo function args
+    val args: List<Expr>, // todo function args
+    val filterWhere: Expr? = null
     // todo filter, over clause
 ) : Expr {
-    override fun toString() = "$name${args.parentString()}"
+    override fun toString() = buildString {
+        append("$name${args.parentString()}")
+        if (filterWhere != null) append(" FILTER (WHERE $filterWhere)")
+    }
 }
 
 //class Tuple(
