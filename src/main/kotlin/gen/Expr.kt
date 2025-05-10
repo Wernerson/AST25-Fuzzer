@@ -37,7 +37,7 @@ class ExprGenerator(
     cfg: GeneratorConfig,
     private val input: DataSet,
     private val depth: Int = cfg.maxExprDepth,
-    private val onlyDeterministic: Boolean = false,
+    private val onlyDeterministic: Boolean = true, // todo configurable
     private val exprType: ExprType = ExprType.ANY
 ) : Generator(cfg) {
 
