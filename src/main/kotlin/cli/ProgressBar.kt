@@ -9,6 +9,7 @@ fun IntRange.pbar(name: String): Stream<Int> {
     val pbb = ProgressBarBuilder()
         .setTaskName(name)
         .setUnit("queries", 1L)
+        .setConsumer(Logger.progress())
         .showSpeed()
     return ProgressBar.wrap(IntStream.range(start, endInclusive), pbb)
 }
