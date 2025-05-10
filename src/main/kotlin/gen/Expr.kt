@@ -161,7 +161,6 @@ class ExprGenerator(
         .let { oneOf(it) }
         .let { (name, params) ->
             val args = params.map { with(depth - 1, exprType = ExprType(listOf(it), true)).expr() }
-            val filterWhere = if(nextBoolean(0.5)) expr() else null
-            FunctionCall(name, args, filterWhere)
+            FunctionCall(name, args)
         }
 }
