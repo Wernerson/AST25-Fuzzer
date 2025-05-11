@@ -20,17 +20,6 @@ fun main(args: Array<String>) {
     val crash = CrashTask()
     val queries = QueriesTask()
     val coverage = CoverageTask()
-
-    val test = object : Subcommand("test", "") {
-        override fun execute() {
-            val rand = Random.Default
-            for (i in (1..10).pbar("test")) {
-                sleep(rand.nextLong(100, 1000))
-                if (rand.nextBoolean()) Logger.info { "Count to $i" }
-            }
-        }
-    }
-
-    parser.subcommands(compare, crash, queries, coverage, test)
+    parser.subcommands(compare, crash, queries, coverage)
     parser.parse(args)
 }
