@@ -1,18 +1,26 @@
-package net.sebyte
-
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-const val NOT_TERMINATED = -69420 // random special code for non-termination
+sealed interface ExecResult {
+    object Timeout : ExecResult
+    open class Success(val output: String) : ExecResult
+    open class Error(val code: Int, val error: String) : ExecResult
+}
 
 fun runCmd(
-    cmd: List<String>,
+    command: String,
     input: String? = null,
-    workDir: String = "."
-): Triple<Int, String, String> {
+    workDir: File = File(".")
+) = runCmd(listOf(command), input, workDir)
+
+fun runCmd(
+    commands: List<String>,
+    input: String? = null,
+    workDir: File = File(".")
+): ExecResult {
     // create process
-    val proc = ProcessBuilder(cmd)
-        .directory(File(workDir))
+    val proc = ProcessBuilder(commands)
+        .directory(workDir)
         .redirectOutput(ProcessBuilder.Redirect.PIPE)
         .redirectError(ProcessBuilder.Redirect.PIPE)
         .start()
@@ -24,17 +32,43 @@ fun runCmd(
     val finished = proc.waitFor(5, TimeUnit.SECONDS)
     return if (!finished) {
         proc.destroy()
-        Triple(NOT_TERMINATED, "", "")
+        ExecResult.Timeout
     } else {
         val error = proc.errorStream.bufferedReader().readText()
         val output = proc.inputStream.bufferedReader().readText()
         val exit = proc.exitValue()
-        Triple(exit, output, error)
+        if (exit == 0) ExecResult.Success(output)
+        else ExecResult.Error(exit, error)
     }
 }
 
 fun runSql(
-    sqlitePath: String,
+    executable: String,
     sql: String,
-    workDir: String
-): Triple<Int, String, String> = runCmd(listOf(sqlitePath, "test.db"), sql, workDir)
+    testDb: File? = null
+): ExecResult =
+    if (testDb != null) runCmd(listOf(executable, testDb.absolutePath, sql))
+    else runCmd(executable, sql)
+
+private val coverageRegex = "^Lines executed:(\\d+\\.?\\d*)% of \\d+$".toRegex()
+fun getCoverage(executable: String): Double {
+    val result = runCmd(listOf("gcov", "-r", executable))
+
+    val out = when (result) {
+        is ExecResult.Timeout -> error("gcov never terminated!")
+        is ExecResult.Error -> error("gcov returned an error!\nError (${result.code}): ${result.error}")
+        is ExecResult.Success -> result.output
+    }
+
+    val line = out.trim().lines().last()
+    val match = coverageRegex.find(line)
+    val coverage = match?.groups[1]?.value?.toDoubleOrNull()
+    checkNotNull(coverage) {
+        """
+            gcov output could not be parsed correctly!
+            Output:
+            $out
+        """.trimIndent()
+    }
+    return coverage
+}

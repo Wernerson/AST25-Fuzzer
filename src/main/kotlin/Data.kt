@@ -10,11 +10,11 @@ import kotlin.random.nextInt
 
 fun createDataSources(
     cfg: GeneratorConfig,
-    noTables: IntRange = 5..10,
-    noColumns: IntRange = 5..10,
+    noTables: Int,
+    noColumns: Int,
 ): Tables = buildMap {
-    for (i in 1..cfg.r.nextInt(noTables)) {
-        val columns = List(cfg.r.nextInt(noColumns)) { "t${i}_c$it" to DataType.entries.random(cfg.r) }
+    for (i in 1..noTables) {
+        val columns = List(noColumns) { "t${i}_c$it" to DataType.entries.random(cfg.r) }
         put("t$i", columns)
     }
 }

@@ -2,14 +2,15 @@ package net.sebyte.cli
 
 import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarBuilder
-import java.util.stream.IntStream
-import java.util.stream.Stream
+import net.sebyte.ast.Select
+import net.sebyte.run.Legislator
 
-fun IntRange.pbar(name: String): Stream<Int> {
+fun Legislator.pbar(): Iterator<Select> {
     val pbb = ProgressBarBuilder()
-        .setTaskName(name)
+        .setTaskName("Running tests")
         .setUnit("queries", 1L)
         .setConsumer(Logger.progress())
         .showSpeed()
-    return ProgressBar.wrap(IntStream.range(start, endInclusive), pbb)
+    size?.let { pbb.setInitialMax(it.toLong()) }
+    return ProgressBar.wrap(this, pbb)
 }
