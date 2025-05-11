@@ -43,7 +43,7 @@ abstract class BasicTask(name: String, description: String) : Subcommand(name, d
 
     override fun execute() {
         Logger.verbose = verbose
-        if (version) Logger.info{ "v0.1.0 by Sebastian Brunner" }
+        if (version) Logger.info { "v0.1.0 by Sebastian Brunner" }
         else run()
     }
 

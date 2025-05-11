@@ -56,11 +56,13 @@ class Mutator(
     fun mutate(s: Select, outMap: OutputMap): Select {
         val fromGen = FromGenerator(cfg, tables, outMap, cfg.maxSelectDepth)
         val output = outMap[s]!!
-        val from = keep { s.from } mutate { s.from?.let {
-            val from = fromGen.mutate(it)
-            outMap[from] = outMap[it]!! // todo improve
-            from
-        } ?: fromGen.from() }
+        val from = keep { s.from } mutate {
+            s.from?.let {
+                val from = fromGen.mutate(it)
+                outMap[from] = outMap[it]!! // todo improve
+                from
+            } ?: fromGen.from()
+        }
         val input = from?.let { outMap[it]!! } ?: emptyList()
 
         val exprGen = ExprGenerator(cfg, input)

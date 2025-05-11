@@ -8,7 +8,6 @@ import net.sebyte.cli.Logger
 import net.sebyte.gen.OutputMap
 import net.sebyte.gen.SelectGenerator
 import net.sebyte.mut.Mutator
-import kotlin.math.max
 
 private val IGNORED_CODES = listOf(NOT_TERMINATED, 0, 1) // 0 = Success, 1 = Syntax Error
 

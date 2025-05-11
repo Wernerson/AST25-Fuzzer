@@ -18,7 +18,7 @@ sealed interface TableOrSubquery : Node {
         val indexName: String? = null,
         override val alias: String? = null
     ) : TableOrSubquery {
-        override fun aliased(alias: String) = copy(alias=alias)
+        override fun aliased(alias: String) = copy(alias = alias)
         override fun toString() = buildString {
             if (schemaName != null) append("$schemaName.")
             append(tableName)
@@ -29,9 +29,9 @@ sealed interface TableOrSubquery : Node {
 
     data class Subquery(
         val select: Select,
-        override val  alias: String? = null
+        override val alias: String? = null
     ) : TableOrSubquery {
-        override fun aliased(alias: String) = copy(alias=alias)
+        override fun aliased(alias: String) = copy(alias = alias)
         override fun toString() = buildString {
             append("(${select.toString(false)})")
             if (alias != null) append(" AS $alias")

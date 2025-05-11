@@ -29,7 +29,7 @@ sealed interface LiteralValue : Expr {
         NULL, TRUE, FALSE
     }
 
-    enum class Variables: LiteralValue {
+    enum class Variables : LiteralValue {
         CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP
     }
 }
