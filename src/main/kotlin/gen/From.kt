@@ -10,6 +10,7 @@ import kotlin.random.nextInt
 class FromGenerator(
     cfg: GeneratorConfig,
     private val tables: Tables,
+    val ioMap: IOMap,
     private val depth: Int = cfg.maxFromDepth
 ) : Generator(cfg) {
 
@@ -24,7 +25,8 @@ class FromGenerator(
         if (depth > 0) {
             add {
                 val selectGen = SelectGenerator(cfg, tables, depth - 1)
-                val (subquery, output) = selectGen.selectWithOutput()
+                val subquery = selectGen.select(ioMap)
+                val output = ioMap[subquery]!!.second
                 val alias = "sa${r.nextInt(1000..9999)}"
                 val dataset = output.map { DataEntry(alias, it.name, it.type) }
                 TableOrSubquery.Subquery(subquery, alias) to dataset

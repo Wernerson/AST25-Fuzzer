@@ -5,6 +5,7 @@ import kotlinx.cli.default
 import net.sebyte.*
 import net.sebyte.ast.Select
 import net.sebyte.cli.Logger
+import net.sebyte.gen.IOMap
 import net.sebyte.gen.SelectGenerator
 import net.sebyte.mut.Mutator
 import kotlin.math.max
@@ -49,12 +50,15 @@ class CoverageTask : BasicTask(
         Logger.info { "Coverage (SELECT 1): $coverage" }
 
         val generator = SelectGenerator(cfg, dataSources)
-        val queue = ArrayDeque<Select>(10)
-        for (i in 0..numberOfQueries) queue.addLast(generator.select())
+        val queue = ArrayDeque<Pair<Select, IOMap>>(10)
+        for (i in 0..numberOfQueries) {
+            val ioMap: IOMap = mutableMapOf()
+            queue.addLast(generator.select(ioMap) to ioMap)
+        }
 
         val mutator = Mutator(cfg, dataSources)
         while (queue.isNotEmpty()) {
-            val query = queue.removeFirst()
+            val (query, ioMap) = queue.removeFirst()
             val (code, _, err) = runSql("./sqlite3", query.toString(), workDir = ".")
             codes[code] = codes.getOrDefault(code, 0) + 1
 
@@ -71,7 +75,7 @@ class CoverageTask : BasicTask(
             val cov = getCoverage()
             if (cov > coverage) {
                 Logger.debug { "Increased coverage: $cov > $coverage" }
-                for (i in 0..mutations) queue.addLast(mutator.mutate(query))
+                for (i in 0..mutations) queue.addLast(mutator.mutate(query, ioMap) to ioMap)
             }
             coverage = max(coverage, cov)
         }

@@ -5,13 +5,16 @@ import net.sebyte.cfg.GeneratorConfig
 import net.sebyte.gen.ExprGenerator
 import net.sebyte.gen.ExprType
 import net.sebyte.gen.FromGenerator
+import net.sebyte.gen.Generator
+import net.sebyte.gen.IOMap
 import net.sebyte.gen.Tables
+import kotlin.random.Random.Default.nextBoolean
 
 class Mutator(
-    private val cfg: GeneratorConfig,
+    cfg: GeneratorConfig,
     private val tables: Tables
-) {
-    private val r = cfg.r
+): Generator(cfg) {
+
     private val mutPct = 0.1
     private fun <T> keep(block: () -> T) = block
     private infix fun <T> (() -> T).mutate(block: () -> T) = if (r.nextDouble() < mutPct) block() else this()
@@ -28,7 +31,7 @@ class Mutator(
 
     fun FromGenerator.mutate(t: TableOrSubquery): TableOrSubquery = when (t) {
         is TableOrSubquery.Table -> keep { t } mutate { tableOrSubquery().first }
-        is TableOrSubquery.Subquery -> keep { TableOrSubquery.Subquery(mutate(t.select)) } mutate { tableOrSubquery().first }
+        is TableOrSubquery.Subquery -> keep { TableOrSubquery.Subquery(mutate(t.select, ioMap)) } mutate { tableOrSubquery().first }
     }
 
     fun FromGenerator.mutate(j: JoinClause.JoinedClause) = JoinClause.JoinedClause(
@@ -52,19 +55,26 @@ class Mutator(
         is TableOrSubqueries -> keep { TableOrSubqueries(f.tableOrSubqueries.map { mutate(it) }) } mutate { from().first }
     }
 
-    fun mutate(s: Select): Select {
-        val fromGen = FromGenerator(cfg, tables, cfg.maxSelectDepth)
-        val from = keep { s.from } mutate { s.from?.let { fromGen.mutate(it) } ?: fromGen.from().first }
-        val exprGen = ExprGenerator.constExprGenerator(cfg)
-        return Select(
+    fun mutate(s: Select, ioMap: IOMap): Select {
+        val fromGen = FromGenerator(cfg, tables, ioMap, cfg.maxSelectDepth)
+        val (ioInput, output) = ioMap[s]!!
+        val (from, input) = keep { s.from to ioInput } mutate { s.from?.let { fromGen.mutate(it) to ioInput } ?: fromGen.from() }
+        val exprGen = ExprGenerator(cfg, input)
+        val groupBy = keep { s.groupBy } mutate {
+            if (nextBoolean(0.8)) listOf(1..3) { TableColumn(column = oneOf(output).name) }
+            else listOf(1..3) { exprGen.expr() }
+        }
+        val select = Select(
             flag = s.flag,
             resultColumns = s.resultColumns,
             from = from,
             where = keep { s.where } mutate { s.where?.let { exprGen.mutate(it) } },
-            groupBy = s.groupBy?.map { exprGen.mutate(it) },
-            having = s.having?.let { exprGen.mutate(it) },
+            groupBy = groupBy,
+            having = if (groupBy != null) s.having?.let { exprGen.mutate(it) } else null,
             orderBy = s.orderBy,
             limit = s.limit
         )
+        ioMap[select] = input to output
+        return select
     }
 }

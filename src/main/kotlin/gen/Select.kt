@@ -5,6 +5,7 @@ import net.sebyte.cfg.GeneratorConfig
 import kotlin.random.nextInt
 
 typealias Tables = Map<String, List<Pair<String, DataType>>>
+typealias IOMap = MutableMap<Select, Pair<DataSet, DataSet>>
 
 class SelectGenerator(
     cfg: GeneratorConfig,
@@ -45,16 +46,15 @@ class SelectGenerator(
 //        }
     }
 
-    fun select(): Select = selectWithOutput().first
-    fun selectWithOutput(): Pair<Select, DataSet> {
-        val (from, input) = FromGenerator(cfg, tables, depth).from()
+    fun select(ioMap: IOMap = mutableMapOf()): Select {
+        val (from, input) = FromGenerator(cfg, tables, ioMap, depth).from()
         val exprGenerator = ExprGenerator(cfg, input)
         val (resultColumns, output) = resultColumns(input)
         val groupBy = if (nextBoolean(cfg.groupByPct)) {
             if (nextBoolean(0.8)) listOf(1..3) { TableColumn(column = oneOf(output).name) }
             else listOf(1..3) { exprGenerator.expr() }
         } else null
-        return Select(
+        val select = Select(
             flag = oneOf(Select.Flag.DISTINCT, Select.Flag.ALL, null),
             resultColumns = resultColumns,
             from = from,
@@ -63,6 +63,8 @@ class SelectGenerator(
             having = if (groupBy != null) exprGenerator.exprOrNull(cfg.havingPct) else null,
             orderBy = if (nextBoolean(cfg.orderByPct)) listOf(1..3) { orderingTerm(exprGenerator) } else null,
             limit = if (nextBoolean(cfg.limitPct)) limit() else null
-        ) to output
+        )
+        ioMap[select] = input to output
+        return select
     }
 }
