@@ -1,7 +1,10 @@
 package net.sebyte.gen
 
+import net.sebyte.ast.Node
 import net.sebyte.cfg.GeneratorConfig
 import kotlin.random.nextInt
+
+typealias OutputMap = MutableMap<Node, DataSet>
 
 abstract class Generator(
     val cfg: GeneratorConfig

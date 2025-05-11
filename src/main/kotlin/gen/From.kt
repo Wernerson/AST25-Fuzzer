@@ -10,26 +10,28 @@ import kotlin.random.nextInt
 class FromGenerator(
     cfg: GeneratorConfig,
     private val tables: Tables,
-    val ioMap: IOMap,
+    val outMap: OutputMap,
     private val depth: Int = cfg.maxFromDepth
 ) : Generator(cfg) {
 
-    fun tableOrSubquery(): Pair<TableOrSubquery, DataSet> = oneOf {
+    fun tableOrSubquery(): TableOrSubquery = oneOf {
         add {
             val table = oneOf(tables.entries)
             val alias = "ta${r.nextInt(1000..9999)}"
-            val dataset = table.value.map { (name, type) -> DataEntry(alias, name, type) }
-            TableOrSubquery.Table(tableName = table.key, alias = alias) to dataset
+            val tableOrSubquery = TableOrSubquery.Table(tableName = table.key, alias = alias)
+            outMap[tableOrSubquery] = table.value.map { (name, type) -> DataEntry(alias, name, type) }
+            tableOrSubquery
         }
 
         if (depth > 0) {
             add {
                 val selectGen = SelectGenerator(cfg, tables, depth - 1)
-                val subquery = selectGen.select(ioMap)
-                val output = ioMap[subquery]!!.second
+                val select = selectGen.select(outMap)
+                val output = outMap[select]!!
                 val alias = "sa${r.nextInt(1000..9999)}"
-                val dataset = output.map { DataEntry(alias, it.name, it.type) }
-                TableOrSubquery.Subquery(subquery, alias) to dataset
+                val subquery = TableOrSubquery.Subquery(select, alias)
+                outMap[subquery] = output.map { DataEntry(alias, it.name, it.type) }
+                subquery
             }
 
 //            add {
@@ -54,22 +56,27 @@ class FromGenerator(
         return JoinClause.JoinedClause(operator, tableOrSubquery, constraint)
     }
 
-    fun joinClause(): Pair<JoinClause, DataSet> {
-        var (table, dataset) = tableOrSubquery()
+    fun joinClause(): JoinClause {
+        val table = tableOrSubquery()
+        var dataset = outMap[table]!!
         val joinedClauses = listOf(1..3) {
-            val (nextTable, nextDataset) = tableOrSubquery()
+            val nextTable = tableOrSubquery()
+            val nextDataset = outMap[nextTable]!!
             dataset += nextDataset
             joinedClause(nextTable, dataset)
         }
-        return JoinClause(table, joinedClauses) to dataset
+        val join = JoinClause(table, joinedClauses)
+        outMap[join] = dataset
+        return join
     }
 
-    fun from(): Pair<From, DataSet> = oneOf {
+    fun from(): From = oneOf {
         add { joinClause() }
         add {
             val sources = listOf(1..3) { tableOrSubquery() }
-            val dataset: DataSet = sources.fold(emptyList()) { acc, (_, src) -> acc + src }
-            TableOrSubqueries(sources.map { it.first }) to dataset
+            val tableOrSubqueries = TableOrSubqueries(sources)
+            outMap[tableOrSubqueries] = sources.fold(emptyList()) { acc, src -> acc + outMap[src]!! }
+            tableOrSubqueries
         }
     }
 }

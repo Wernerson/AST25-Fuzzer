@@ -2,18 +2,12 @@ package net.sebyte.mut
 
 import net.sebyte.ast.*
 import net.sebyte.cfg.GeneratorConfig
-import net.sebyte.gen.ExprGenerator
-import net.sebyte.gen.ExprType
-import net.sebyte.gen.FromGenerator
-import net.sebyte.gen.Generator
-import net.sebyte.gen.IOMap
-import net.sebyte.gen.Tables
-import kotlin.random.Random.Default.nextBoolean
+import net.sebyte.gen.*
 
 class Mutator(
     cfg: GeneratorConfig,
     private val tables: Tables
-): Generator(cfg) {
+) : Generator(cfg) {
 
     private val mutPct = 0.1
     private fun <T> keep(block: () -> T) = block
@@ -30,13 +24,17 @@ class Mutator(
     }
 
     fun FromGenerator.mutate(t: TableOrSubquery): TableOrSubquery = when (t) {
-        is TableOrSubquery.Table -> keep { t } mutate { tableOrSubquery().first }
-        is TableOrSubquery.Subquery -> keep { TableOrSubquery.Subquery(mutate(t.select, ioMap)) } mutate { tableOrSubquery().first }
+        is TableOrSubquery.Table -> keep { t } mutate { tableOrSubquery() }
+        is TableOrSubquery.Subquery -> keep {
+            TableOrSubquery.Subquery(
+                mutate(t.select, outMap)
+            )
+        } mutate { tableOrSubquery() }
     }
 
     fun FromGenerator.mutate(j: JoinClause.JoinedClause) = JoinClause.JoinedClause(
         operator = keep { j.operator } mutate { oneOf(cfg.supportedJoinOperators) },
-        tableOrSubquery = keep { mutate(j.tableOrSubquery) } mutate { tableOrSubquery().first },
+        tableOrSubquery = keep { mutate(j.tableOrSubquery) } mutate { tableOrSubquery() },
         constraint = keep { j.constraint } mutate {
             val exprGen = ExprGenerator.constExprGenerator(cfg).with(exprType = ExprType.INTEGER)
             when (j.constraint) {
@@ -50,15 +48,21 @@ class Mutator(
     fun FromGenerator.mutate(f: From): From = when (f) {
         is JoinClause -> keep {
             JoinClause(mutate(f.tableOrSubquery), f.joinedClauses.map { mutate(it) })
-        } mutate { from().first }
+        } mutate { from() }
 
-        is TableOrSubqueries -> keep { TableOrSubqueries(f.tableOrSubqueries.map { mutate(it) }) } mutate { from().first }
+        is TableOrSubqueries -> keep { TableOrSubqueries(f.tableOrSubqueries.map { mutate(it) }) } mutate { from() }
     }
 
-    fun mutate(s: Select, ioMap: IOMap): Select {
-        val fromGen = FromGenerator(cfg, tables, ioMap, cfg.maxSelectDepth)
-        val (ioInput, output) = ioMap[s]!!
-        val (from, input) = keep { s.from to ioInput } mutate { s.from?.let { fromGen.mutate(it) to ioInput } ?: fromGen.from() }
+    fun mutate(s: Select, outMap: OutputMap): Select {
+        val fromGen = FromGenerator(cfg, tables, outMap, cfg.maxSelectDepth)
+        val output = outMap[s]!!
+        val from = keep { s.from } mutate { s.from?.let {
+            val from = fromGen.mutate(it)
+            outMap[from] = outMap[it]!! // todo improve
+            from
+        } ?: fromGen.from() }
+        val input = from?.let { outMap[it]!! } ?: emptyList()
+
         val exprGen = ExprGenerator(cfg, input)
         val groupBy = keep { s.groupBy } mutate {
             if (nextBoolean(0.8)) listOf(1..3) { TableColumn(column = oneOf(output).name) }
@@ -74,7 +78,7 @@ class Mutator(
             orderBy = s.orderBy,
             limit = s.limit
         )
-        ioMap[select] = input to output
+        outMap[select] = output
         return select
     }
 }
