@@ -73,11 +73,11 @@ class CoverageTask : BasicTask(
             }
 
             val cov = getCoverage()
-            if (cov > coverage) {
-                Logger.debug { "Increased coverage: $cov > $coverage" }
+            if (coverage < cov) {
+                Logger.debug { "Increased coverage: $coverage < $cov" }
+                coverage = cov
                 for (i in 0..mutations) queue.addLast(mutator.mutate(query, outMap) to outMap)
             }
-            coverage = max(coverage, cov)
         }
 
         Logger.info { "Final coverage: $coverage" }
