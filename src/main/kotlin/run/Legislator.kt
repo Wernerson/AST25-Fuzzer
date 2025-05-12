@@ -53,7 +53,7 @@ class MutableLegislator(
     override fun next() = queue.removeFirst()
 
     override fun notice(query: Select, verdict: Verdict) = when (verdict) {
-        Verdict.UNINTERESTING -> {} //do nothing
+        Verdict.BORING -> {} //do nothing
         Verdict.BUGGY,
         Verdict.INTERESTING -> {
             val map = maps[query]!!

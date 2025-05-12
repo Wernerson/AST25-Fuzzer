@@ -10,13 +10,15 @@ sealed interface ExecResult {
 fun runCmd(
     command: String,
     input: String? = null,
-    workDir: File = File(".")
+    workDir: File = File("."),
+    timeout: Long = 5,
 ) = runCmd(listOf(command), input, workDir)
 
 fun runCmd(
     commands: List<String>,
     input: String? = null,
-    workDir: File = File(".")
+    workDir: File = File("."),
+    timeout: Long = 5,
 ): ExecResult {
     // create process
     val proc = ProcessBuilder(commands)
@@ -29,7 +31,7 @@ fun runCmd(
         if (input != null) it.write(input)
     }
     // wait for result
-    val finished = proc.waitFor(5, TimeUnit.SECONDS)
+    val finished = proc.waitFor(timeout, TimeUnit.SECONDS)
     return if (!finished) {
         proc.destroy()
         ExecResult.Timeout
@@ -45,9 +47,10 @@ fun runCmd(
 fun runSql(
     executable: String,
     sql: String,
-    testDb: File? = null
+    testDb: File? = null,
+    timeout: Long = 5,
 ): ExecResult =
-    if (testDb != null) runCmd(listOf(executable, testDb.absolutePath, sql))
+    if (testDb != null) runCmd(listOf(executable, testDb.absolutePath), sql, timeout = timeout)
     else runCmd(executable, sql)
 
 private val coverageRegex = "^Lines executed:(\\d+\\.?\\d*)% of \\d+$".toRegex()

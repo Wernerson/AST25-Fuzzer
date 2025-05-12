@@ -1,67 +1,65 @@
 package net.sebyte.run
 
 import ExecResult
+import getCoverage
+import net.sebyte.ast.Select
 import net.sebyte.cli.Logger
 
 enum class Verdict {
-    BUGGY, INTERESTING, UNINTERESTING
+    BUGGY, INTERESTING, BORING
 }
 
 interface Judicator {
-    fun judge(result: ExecResult): Verdict
+    fun judge(query: Select, result: ExecResult): Verdict
 }
 
 object IgnorantJudicator : Judicator {
-    override fun judge(result: ExecResult) = Verdict.UNINTERESTING
+    override fun judge(query: Select, result: ExecResult) = Verdict.BORING
 }
 
 private val IGNORED_CODES = listOf(0, 1) // 0 = Success, 1 = Syntax Error
 
 object ErrorCodeJudicator : Judicator {
-    override fun judge(result: ExecResult) = when (result) {
+    override fun judge(query: Select, result: ExecResult) = when (result) {
         is ExecResult.Error ->
-            if (result.code in IGNORED_CODES) Verdict.UNINTERESTING
+            if (result.code in IGNORED_CODES) Verdict.BORING
             else Verdict.BUGGY
 
         ExecResult.Timeout,
-        is ExecResult.Success -> Verdict.UNINTERESTING
+        is ExecResult.Success -> Verdict.BORING
     }
 }
 
-object ComparisonJudicator : Judicator {
-    override fun judge(result: ExecResult): Verdict = when (result) {
-        ExecResult.Timeout -> Verdict.UNINTERESTING
-
-        is DualError ->
-            if (result.code in IGNORED_CODES) Verdict.UNINTERESTING
-            else if (result.other !is ExecResult.Error) Verdict.BUGGY
-            else if (result.code != result.other.code) Verdict.BUGGY
-            else Verdict.UNINTERESTING
-
-        is DualSuccess ->
-            if (result.other !is ExecResult.Success) Verdict.BUGGY
-            else if (result.output != result.other.output) Verdict.BUGGY
-            else Verdict.UNINTERESTING
-
-        is ExecResult.Success -> Verdict.UNINTERESTING
-        is ExecResult.Error ->
-            if (result.code in IGNORED_CODES) Verdict.UNINTERESTING
-            else Verdict.INTERESTING
+class DifferentialJudicator(
+    private val oracleExecutor: Executor
+) : Judicator {
+    override fun judge(query: Select, result: ExecResult): Verdict {
+        if (result is ExecResult.Timeout) return Verdict.BORING
+        val oracle = oracleExecutor.execute(query)
+        return when(oracle) {
+            ExecResult.Timeout -> Verdict.BORING
+            is ExecResult.Error -> when {
+                result is ExecResult.Success -> Verdict.INTERESTING
+                result is ExecResult.Error && oracle.code != result.code -> Verdict.BUGGY
+                else -> Verdict.BORING
+            }
+            is ExecResult.Success -> when {
+                result is ExecResult.Error -> Verdict.BUGGY
+                result is ExecResult.Success && oracle.output != result.output -> Verdict.BUGGY
+                else -> Verdict.BORING
+            }
+        }
     }
 }
 
 class CoverageJudicator(
-    private val judicator: Judicator
+    private val judicator: Judicator,
+    private val executable: String
 ) : Judicator {
     private var coverage = 0.0
-    override fun judge(result: ExecResult): Verdict {
-        val verdict = judicator.judge(result)
-
-        val cov = when (result) {
-            is ErrorWithCoverage -> result.coverage
-            is SuccessWithCoverage -> result.coverage
-            else -> coverage
-        }
+    override fun judge(query: Select, result: ExecResult): Verdict {
+        val verdict = judicator.judge(query, result)
+        val cov = getCoverage(executable)
 
         return if (coverage < cov) {
             Logger.info { "Coverage increased: $coverage < $cov" }

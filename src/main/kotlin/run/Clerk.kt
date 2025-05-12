@@ -60,20 +60,9 @@ open class SummaryClerk(
 
 class CoverageClerk(
     outputFile: File? = null,
-    execPath: String
+    private val execPath: String
 ) : SummaryClerk(outputFile) {
-    private var coverage = getCoverage(execPath)
-    private val baseline = coverage
-
-    override fun report(
-        query: Select,
-        result: ExecResult,
-        verdict: Verdict
-    ) {
-        super.report(query, result, verdict)
-        if (result is ErrorWithCoverage) coverage = max(coverage, result.coverage)
-        else if (result is SuccessWithCoverage) coverage = max(coverage, result.coverage)
-    }
+    private val baseline = getCoverage(execPath)
 
     override fun summarise() {
         if (outputFile == null) Logger.info {
@@ -86,10 +75,8 @@ class CoverageClerk(
                     Not terminated: $nonTerminations
                     """.trimIndent()
                 )
-                if (coverage > 0.0) {
-                    appendLine("Baseline: $baseline")
-                    appendLine("Coverage: $coverage")
-                }
+                appendLine("Baseline: $baseline")
+                appendLine("Coverage: ${getCoverage(execPath)}")
                 appendLine("Error codes:")
                 for ((code, count) in codes) appendLine("  $code: $count (${count / errors})")
             }

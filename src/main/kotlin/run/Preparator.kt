@@ -1,6 +1,8 @@
 package net.sebyte.run
 
+import ExecResult
 import net.sebyte.cfg.GeneratorConfig
+import net.sebyte.cli.Logger
 import net.sebyte.createDataSources
 import net.sebyte.createDatabase
 import net.sebyte.gen.Tables
@@ -40,9 +42,17 @@ class TestDbPreparator(
 
     override fun prepare(): Workspace {
         val workspace = super.prepare()
-        testDb.mkdirs()
+        testDb.parentFile.mkdirs()
         testDb.createNewFile()
-        runSql(subject, workspace.createSql, testDb)
+        val result = runSql(subject, workspace.createSql, testDb, timeout = 30)
+
+        when (result) {
+            is ExecResult.Error -> Logger.debug { "Database setup had errors:\n${result.error}" }
+            is ExecResult.Success -> Logger.debug { "Database setup without errors." }
+            ExecResult.Timeout -> Logger.debug { "Database setup timed out." }
+        }
+
+        File("./create.sql").writeText(workspace.createSql)
         return workspace
     }
 }

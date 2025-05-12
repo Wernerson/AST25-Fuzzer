@@ -11,7 +11,7 @@ class Trial(
     fun run() {
         for (query in legislator.pbar()) {
             val result = executor.execute(query)
-            val verdict = judicator.judge(result)
+            val verdict = judicator.judge(query, result)
             clerk.report(query, result, verdict)
             legislator.notice(query, verdict)
         }
