@@ -4,19 +4,13 @@ import ExecResult
 import getCoverage
 import net.sebyte.ast.Select
 import net.sebyte.cli.Logger
-import java.io.File
-import kotlin.math.max
 
 interface Clerk {
     fun report(query: Select, result: ExecResult, verdict: Verdict) {}
     fun summarise() {}
 }
 
-object IgnorantClerk : Clerk
-
-open class SummaryClerk(
-    protected val outputFile: File? = null
-) : Clerk {
+open class BaseClerk : Clerk {
     protected val codes = mutableMapOf<Int, Int>()
     protected var total = 0
     protected var successes = 0
@@ -41,7 +35,7 @@ open class SummaryClerk(
     }
 
     override fun summarise() {
-        if (outputFile == null) Logger.info {
+        Logger.info {
             buildString {
                 appendLine(
                     """
@@ -60,8 +54,7 @@ open class SummaryClerk(
 
 class CoverageClerk(
     private val execPath: String,
-    outputFile: File? = null
-) : SummaryClerk(outputFile) {
+) : BaseClerk() {
     private val baseline = getCoverage(execPath)
 
     override fun summarise() {

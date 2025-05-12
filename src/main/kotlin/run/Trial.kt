@@ -2,6 +2,9 @@ package net.sebyte.run
 
 import net.sebyte.cfg.*
 import net.sebyte.cli.pbar
+import net.sebyte.createDataSources
+import net.sebyte.createDatabase
+import runSql
 import java.io.File
 
 class Trial(
@@ -28,27 +31,32 @@ class Trial(
                 SQLiteConfig.v3_44_4 -> SQLITE_v3_44_4
             }
 
+            val tables = createDataSources(genConfig, cfg.noTables, cfg.noColumns)
+            val createSql = createDatabase(genConfig, tables)
+
             val testDb = cfg.testDb?.let { File(it) }
 
-            val preparator = if (testDb == null) Preparator(genConfig, cfg.noTables, cfg.noColumns)
-            else TestDbPreparator(genConfig, cfg.noTables, cfg.noColumns, cfg.subject, testDb)
-            val env = preparator.prepare()
+            if (testDb != null) {
+                testDb.parentFile.mkdirs()
+                testDb.createNewFile()
+                runSql(cfg.subject, createSql, testDb, timeout = 30)
+            }
 
-            val legislator = if (cfg.mutations == null) SimpleLegislator(cfg.queries, genConfig, env.tables)
-            else MutableLegislator(cfg.queries, cfg.mutations, genConfig, env.tables)
+            val legislator = if (cfg.mutations == null) SimpleLegislator(cfg.queries, genConfig, tables)
+            else MutableLegislator(cfg.queries, cfg.mutations, genConfig, tables)
 
-            val executor = if (testDb == null) InMemoryExecutor(cfg.subject, env.createSql)
+            val executor = if (testDb == null) InMemoryExecutor(cfg.subject, createSql)
             else TestDbExecutor(cfg.subject, testDb)
 
             var judicator = if (cfg.oracle == null) ErrorCodeJudicator
             else if (testDb != null) DifferentialJudicator(TestDbExecutor(cfg.oracle, testDb))
-            else DifferentialJudicator(InMemoryExecutor(cfg.oracle, env.createSql))
+            else DifferentialJudicator(InMemoryExecutor(cfg.oracle, createSql))
 
             if (cfg.coverage) {
                 judicator = CoverageJudicator(judicator, "sqlite3-sqlite3")
             }
 
-            val clerk = if (cfg.coverage) CoverageClerk("sqlite3-sqlite3") else SummaryClerk()
+            val clerk = if (cfg.coverage) CoverageClerk("sqlite3-sqlite3") else BaseClerk()
 
             return Trial(legislator, executor, judicator, clerk)
         }
