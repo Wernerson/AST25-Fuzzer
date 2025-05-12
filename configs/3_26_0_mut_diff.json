@@ -1,0 +1,12 @@
+{
+  "subject": "./sqlite/sqlite3",
+  "oracle": "sqlite3-3.44.4",
+  "generator": "v3_26_0",
+  "queries": 1000,
+  "mutations": 100,
+  "coverage": true,
+  "testDb": "./test.db",
+  "archiveDir": "./bugs",
+  "noTables": 200,
+  "noColumns": 100
+}

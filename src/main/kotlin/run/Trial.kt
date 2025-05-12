@@ -53,12 +53,17 @@ class Trial(
             else if (testDb != null) DifferentialJudicator(TestDbExecutor(cfg.oracle, testDb))
             else DifferentialJudicator(InMemoryExecutor(cfg.oracle, createSql))
 
+
             if (cfg.coverage) {
-                judicator = CoverageJudicator(judicator, "sqlite3-sqlite3")
+                val covPath = File(cfg.subject).parentFile.absolutePath
+                judicator = CoverageJudicator(judicator, "$covPath/sqlite3-sqlite3")
             }
 
             val archiveDir = cfg.archiveDir?.let { File(it) }
-            val clerk = if (cfg.coverage) CoverageClerk("sqlite3-sqlite3", archiveDir) else BaseClerk(archiveDir)
+            val clerk = if (cfg.coverage) {
+                val covPath = File(cfg.subject).parentFile.absolutePath
+                CoverageClerk("$covPath/sqlite3-sqlite3", archiveDir)
+            } else BaseClerk(archiveDir)
 
             return Trial(legislator, executor, judicator, clerk)
         }

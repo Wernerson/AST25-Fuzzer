@@ -1,0 +1,9 @@
+{
+  "subject": "sqlite3-3.26.0",
+  "generator": "v3_26_0",
+  "queries": 100000,
+  "testDb": "./test.db",
+  "archiveDir": "./bugs",
+  "noTables": 400,
+  "noColumns": 100
+}

@@ -25,10 +25,3 @@ class RunConfig(
         fun from(filePath: String): RunConfig = Json.decodeFromString<RunConfig>(File(filePath).readText())
     }
 }
-
-val PRESET_CFG = RunConfig(
-    subject = "./sqlite3",
-    oracle = "sqlite3-3.44.4",
-    coverage = true,
-    testDb = "./test.db"
-)
