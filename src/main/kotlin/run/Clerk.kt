@@ -46,40 +46,31 @@ open class SummaryClerk(
                 appendLine(
                     """
                     Total: $total
-                    Successes: $successes
-                    Errors: $errors
-                    Not terminated: $nonTerminations
+                    Successes: $successes (${successes / total}%)
+                    Errors: $errors (${errors / total}%)
+                    Not terminated: $nonTerminations (${nonTerminations / total}%)
                     """.trimIndent()
                 )
                 appendLine("Error codes:")
-                for ((code, count) in codes) appendLine("  $code: $count (${count / errors})")
+                for ((code, count) in codes) appendLine("  $code: $count (${count / errors}% or errors)")
             }
         }
     }
 }
 
 class CoverageClerk(
-    outputFile: File? = null,
-    private val execPath: String
+    private val execPath: String,
+    outputFile: File? = null
 ) : SummaryClerk(outputFile) {
     private val baseline = getCoverage(execPath)
 
     override fun summarise() {
-        if (outputFile == null) Logger.info {
-            buildString {
-                appendLine(
-                    """
-                    Total: $total
-                    Successes: $successes
-                    Errors: $errors
-                    Not terminated: $nonTerminations
-                    """.trimIndent()
-                )
-                appendLine("Baseline: $baseline")
-                appendLine("Coverage: ${getCoverage(execPath)}")
-                appendLine("Error codes:")
-                for ((code, count) in codes) appendLine("  $code: $count (${count / errors})")
-            }
+        super.summarise()
+        Logger.info {
+            """
+            Baseline: $baseline
+            Coverage: ${getCoverage(execPath)}
+            """.trimIndent()
         }
     }
 }

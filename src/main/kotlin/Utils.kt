@@ -51,7 +51,7 @@ fun runSql(
     timeout: Long = 5,
 ): ExecResult =
     if (testDb != null) runCmd(listOf(executable, testDb.absolutePath), sql, timeout = timeout)
-    else runCmd(executable, sql)
+    else runCmd(executable, sql, timeout = timeout)
 
 private val coverageRegex = "^Lines executed:(\\d+\\.?\\d*)% of \\d+$".toRegex()
 fun getCoverage(executable: String): Double {

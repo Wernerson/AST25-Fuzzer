@@ -22,6 +22,11 @@ object Logger {
         println(block())
     }
 
+    fun error(block: () -> Any) {
+        printed = true
+        System.err.println(block())
+    }
+
     fun progress() = object : ProgressBarConsumer {
         val consumer = InteractiveConsoleProgressBarConsumer(System.out)
 

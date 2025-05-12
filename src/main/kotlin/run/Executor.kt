@@ -34,3 +34,19 @@ class TestDbExecutor(
         return result
     }
 }
+
+class InMemoryExecutor(
+    protected val execPath: String,
+    protected val preamble: String
+) : Executor {
+    override fun execute(query: Select): ExecResult {
+        val sql = preamble + "\n" + query.toString()
+        val result = runSql(execPath, sql)
+        when (result) {
+            is ExecResult.Success -> {} // do nothing
+            is ExecResult.Error -> Logger.debug { "Error: ${result.error}" }
+            ExecResult.Timeout -> Logger.debug { "SQLite timed out." }
+        }
+        return result
+    }
+}

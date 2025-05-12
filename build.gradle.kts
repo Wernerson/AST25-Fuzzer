@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "2.1.20"
     id("org.graalvm.buildtools.native") version "0.10.6"
+    kotlin("plugin.serialization") version "2.1.20"
 }
 
 group = "net.sebyte"
@@ -14,6 +15,7 @@ dependencies {
     testImplementation(kotlin("test"))
     implementation("org.jetbrains.kotlinx:kotlinx-cli-jvm:0.3.6")
     implementation("me.tongfei:progressbar:0.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
 }
 
 tasks.test {

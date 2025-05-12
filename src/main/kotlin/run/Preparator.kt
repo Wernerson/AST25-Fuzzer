@@ -24,6 +24,7 @@ open class Preparator(
     open fun prepare(): Workspace {
         val tables = createDataSources(generatorConfig, noTables, noColumns)
         val createSql = createDatabase(generatorConfig, tables)
+        File("./create.sql").writeText(createSql)
         return Workspace(tables, createSql)
     }
 }
@@ -51,8 +52,6 @@ class TestDbPreparator(
             is ExecResult.Success -> Logger.debug { "Database setup without errors." }
             ExecResult.Timeout -> Logger.debug { "Database setup timed out." }
         }
-
-        File("./create.sql").writeText(workspace.createSql)
         return workspace
     }
 }

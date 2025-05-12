@@ -4,6 +4,9 @@ import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.ExperimentalCli
 import kotlinx.cli.default
+import kotlinx.cli.optional
+import net.sebyte.cfg.PRESET_CFG
+import net.sebyte.cfg.RunConfig
 import net.sebyte.cfg.SQLITE_v3_26_0
 import net.sebyte.cli.Logger
 import net.sebyte.run.*
@@ -16,6 +19,8 @@ fun main(args: Array<String>) {
 
     val version by parser.option(ArgType.Boolean, "version", description = "Display version").default(false)
     val verbose by parser.option(ArgType.Boolean, "verbose", "v", "Display version").default(false)
+    val preset by parser.option(ArgType.Boolean, "preset", description = "Use preset for testing").default(false)
+    val config by parser.argument(ArgType.String, "config", "Path to config file").optional()
     parser.parse(args)
 
     Logger.verbose = verbose
@@ -24,16 +29,11 @@ fun main(args: Array<String>) {
         return
     }
 
-    val preparator = TestDbPreparator(SQLITE_v3_26_0, 20, 5, "sqlite3-3.26.0", File("./test.db"))
-//    val preparator = Preparator(SQLITE_v3_26_0, 20, 5)
-    val env = preparator.prepare()
-//    val legislator = MutableLegislator(100, 100, SQLITE_v3_26_0, env.tables)
-    val legislator = SimpleLegislator(100, SQLITE_v3_26_0, env.tables)
-    val executor = TestDbExecutor("./sqlite3", File("./test.db"))
-    val oracleExecutor = TestDbExecutor("sqlite3-3.44.4", File("./test.db"))
-//    val executor = LogExecutor
-    val judicator = CoverageJudicator(DifferentialJudicator(oracleExecutor), "sqlite3-sqlite3")
-    val clerk = CoverageClerk(execPath = "sqlite3-sqlite3")
-    val trial = Trial(legislator, executor, judicator, clerk)
+    if (preset && config != null) Logger.error { "Cannot use preset and config file simultaneously." }
+    else if (!preset && config == null) Logger.error { "Have either use --preset or pass config file." }
+
+    val configFile = config
+    val cfg = if (configFile != null) RunConfig.from(configFile) else PRESET_CFG
+    val trial = Trial.from(cfg)
     trial.run()
 }
