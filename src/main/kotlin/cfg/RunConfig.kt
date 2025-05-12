@@ -18,6 +18,7 @@ class RunConfig(
     val noTables: Int = 20,
     val noColumns: Int = 5,
     val testDb: String? = null,
+    val archiveDir: String? = null,
     val generator: SQLiteConfig = SQLiteConfig.v3_26_0
 ) {
     companion object {

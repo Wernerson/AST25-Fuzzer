@@ -38,6 +38,7 @@ class Trial(
 
             if (testDb != null) {
                 testDb.parentFile.mkdirs()
+                if (testDb.exists()) testDb.delete()
                 testDb.createNewFile()
                 runSql(cfg.subject, createSql, testDb, timeout = 30)
             }
@@ -56,7 +57,8 @@ class Trial(
                 judicator = CoverageJudicator(judicator, "sqlite3-sqlite3")
             }
 
-            val clerk = if (cfg.coverage) CoverageClerk("sqlite3-sqlite3") else BaseClerk()
+            val archiveDir = cfg.archiveDir?.let { File(it) }
+            val clerk = if (cfg.coverage) CoverageClerk("sqlite3-sqlite3", archiveDir) else BaseClerk(archiveDir)
 
             return Trial(legislator, executor, judicator, clerk)
         }
