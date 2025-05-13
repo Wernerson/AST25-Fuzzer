@@ -1,1 +1,38 @@
-SELECT ta2255.t7_c8 AS ca6074, ta2255.t7_c5 AS ca7430, sa2886.ca7705 AS ca2608 FROM  t7 AS ta2255 LEFT JOIN (SELECT sa8967.ca3863 AS ca7705, ta7706.t6_c0 AS ca1090, sa4696.ca9198 AS ca8852 FROM t6 AS ta7706, (SELECT sa5970.ca1349 AS ca4275, sa5970.ca5530 AS ca9198, sa5970.ca5530 AS ca5098, ta1029.t8_c0 AS ca9454 FROM (SELECT sa9361.ca4623 AS ca1349, sa9361.ca4623 AS ca5530, sa9361.ca4723 AS ca795, sa9361.ca4623 AS ca7365 FROM (SELECT ta5132.t10_c7 AS ca6018, ta3179.t4_c4 AS ca9930, ta5132.t10_c5 AS ca7610, ta5132.t10_c8 AS ca4623, ta3179.t4_c1 AS ca1256, ta5132.t10_c7 AS ca4723 FROM  t4 AS ta3179 INNER JOIN t10 AS ta5132  WHERE (ifnull(ta3179.t4_c6, (-1 <=   ta3179.t4_c1 NOTNULL NOTNULL NOT NULL)) IS NOT ta5132.t10_c7) LIMIT 100 )  AS sa9361 WHERE (length((sa9361.ca9930 != changes() ISNULL)) * sa9361.ca1256) LIMIT 100 )  AS sa5970, t8 AS ta1029 LIMIT 100 )  AS sa4696, (SELECT ta1409.t5_c0 AS ca7725 FROM t5 AS ta1409 LIMIT 100 )  AS sa9741, (SELECT sa1950.ca8657 AS ca7679, sa1950.ca8657 AS ca8821, sa1950.ca9716 AS ca9845, sa1950.ca1197 AS ca3863 FROM (SELECT ta9140.t8_c0 AS ca9716, ta9416.t4_c1 AS ca8657, ta9416.t4_c1 AS ca1197 FROM  t4 AS ta9416 LEFT JOIN t8 AS ta9140  LIMIT 100 )  AS sa1950 WHERE hex(sa1950.ca9716) LIMIT 100 )  AS sa8967 LIMIT 100 )  AS sa2886  WHERE (abs(ta2255.t7_c7 ISNULL) / ~  ((ta2255.t7_c0 >= ifnull(((~ta2255.t7_c3 & 10) IS NOT sa2886.ca8852),  ifnull('kzwarmypd', sa2886.ca8852 ISNULL) NOTNULL)) * ('ntb' <= (+-0.016198932370454333 *  sa2886.ca7705 NOTNULL))) NOTNULL NOTNULL) LIMIT 100 ;
+SELECT ta9679.t20_c0 AS ca3033,
+       ta5670.t25_c7 AS ca3685,
+       sa3082.ca5243 AS ca7571,
+       ta9679.t20_c0 AS ca7081,
+       ta5670.t25_c7 AS ca5425,
+       sa3082.ca2031 AS ca3352,
+       ta5670.t25_c1 AS ca1252,
+       sa3082.ca2525 AS ca1635,
+       ta9257.t3_c3  AS ca9752
+FROM (SELECT ta5146.t22_c5 AS ca7751,
+             ta2007.t10_c6 AS ca8810,
+             ta5146.t22_c8 AS ca9872,
+             ta5146.t22_c8 AS ca2486,
+             ta8365.t24_c9 AS ca8115,
+             ta8365.t24_c9 AS ca3535,
+             ta2007.t10_c6 AS ca7389,
+             ta8365.t24_c3 AS ca5243,
+             ta2007.t10_c1 AS ca6451,
+             ta5146.t22_c9 AS ca2872,
+             ta8365.t24_c9 AS ca2904,
+             ta5146.t22_c4 AS ca8053,
+             ta5146.t22_c1 AS ca3575,
+             ta8365.t24_c5 AS ca3356,
+             ta2007.t10_c1 AS ca2031,
+             ta2007.t10_c2 AS ca2525,
+             ta5146.t22_c2 AS ca3649,
+             ta5146.t22_c5 AS ca3638,
+             ta2007.t10_c3 AS ca8341
+      FROM t22 AS ta5146
+               NATURAL LEFT OUTER JOIN t10 AS ta2007
+               CROSS JOIN t24 AS ta8365
+      WHERE X'57201164dc84d0ef0f33'
+      GROUP BY ca2486, ca3535, ca2904
+      ORDER BY TRUE ASC NULLS LAST) AS sa3082
+         FULL OUTER JOIN t25 AS ta5670
+         NATURAL RIGHT OUTER JOIN t20 AS ta9679
+         INNER JOIN t3 AS ta9257 ON nullif(NULL, ta9257.t3_c6)
+ORDER BY FALSE DESC, FALSE DESC NULLS FIRST;
