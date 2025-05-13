@@ -1,6 +1,7 @@
 package net.sebyte.run
 
 import net.sebyte.cfg.*
+import net.sebyte.cli.Logger
 import net.sebyte.cli.pbar
 import net.sebyte.createDataSources
 import net.sebyte.createDatabase
@@ -31,15 +32,16 @@ class Trial(
                 SQLiteConfig.v3_44_4 -> SQLITE_v3_44_4
             }
 
+            Logger.debug { "Creating create.sql..." }
             val tables = createDataSources(genConfig, cfg.noTables, cfg.noColumns)
             val createSql = createDatabase(genConfig, tables)
 
             val testDb = cfg.testDb?.let { File(it) }
-
             if (testDb != null) {
                 testDb.parentFile.mkdirs()
                 if (testDb.exists()) testDb.delete()
                 testDb.createNewFile()
+                Logger.debug { "Creating database file '$testDb'..." }
                 runSql(cfg.subject, createSql, testDb, timeout = 30)
             }
 
@@ -52,7 +54,6 @@ class Trial(
             var judicator = if (cfg.oracle == null) ErrorCodeJudicator
             else if (testDb != null) DifferentialJudicator(TestDbExecutor(cfg.oracle, testDb))
             else DifferentialJudicator(InMemoryExecutor(cfg.oracle, createSql))
-
 
             if (cfg.coverage) {
                 val covPath = File(cfg.subject).parentFile.absolutePath

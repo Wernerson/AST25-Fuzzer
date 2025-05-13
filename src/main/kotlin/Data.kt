@@ -19,6 +19,7 @@ fun createDataSources(
     }
 }
 
+// todo create views??
 fun createDatabase(cfg: GeneratorConfig, tables: Tables) = buildString {
     val constExprGenerator = ExprGenerator.constExprGenerator(cfg)
     tables.forEach { (name, columns) ->

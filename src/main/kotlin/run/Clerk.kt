@@ -47,7 +47,7 @@ open class BaseClerk(
         if (archiveDir != null) {
             val dir = File("$archiveDir/bug_$bugs/")
             dir.mkdirs()
-            File("$dir/original_query.sql").writeText(query.toString())
+            File("$dir/original_test.sql").writeText(query.toString())
             testDb?.copyTo(File("$dir/test.db"), overwrite = true)
             File("$dir/output.txt").writeText(when(result) {
                 is ExecResult.Error -> result.error + "\n" + result.error
