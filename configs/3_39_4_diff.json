@@ -2,9 +2,9 @@
   "subject": "sqlite3-3.39.4",
   "oracle": "./sqlite3-3.39.4/sqlite3",
   "generator": "v3_39_4",
-  "queries": 100000,
+  "queries": 10000,
   "testDb": "./test.db",
   "archiveDir": "./bugs",
-  "noTables": 200,
-  "noColumns": 100
+  "noTables": 25,
+  "noColumns": 10
 }

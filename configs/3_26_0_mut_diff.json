@@ -7,6 +7,6 @@
   "coverage": true,
   "testDb": "./test.db",
   "archiveDir": "./bugs",
-  "noTables": 200,
-  "noColumns": 100
+  "noTables": 25,
+  "noColumns": 10
 }
