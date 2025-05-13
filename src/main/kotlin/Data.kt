@@ -42,7 +42,6 @@ fun createDatabase(cfg: GeneratorConfig, tables: Tables) = buildString {
             append(List(cfg.r.nextInt(1..5)) {
                 exprGenerator.expr()
             }.joinToString())
-            if (cfg.r.nextBoolean()) append(" WHERE ${exprGenerator.expr()}")
             append(");")
             appendLine()
         }
