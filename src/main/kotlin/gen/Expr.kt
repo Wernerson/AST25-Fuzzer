@@ -37,7 +37,7 @@ class ExprGenerator(
     cfg: GeneratorConfig,
     private val input: DataSet,
     private val depth: Int = cfg.maxExprDepth,
-    private val onlyDeterministic: Boolean = true, // todo configurable
+    private val onlyDeterministic: Boolean = true,
     private val exprType: ExprType = ExprType.ANY
 ) : Generator(cfg) {
 
@@ -61,9 +61,7 @@ class ExprGenerator(
                 add(::binaryExpr)
             }
             add(::functionCall)
-//            add { Tuple(listOf(with(depth - 1).expr())) }
         }
-        // todo tuple, cast collate
     }
 
     fun exprOrNull(nonNullPct: Double = 0.5) =

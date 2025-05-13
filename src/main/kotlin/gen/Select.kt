@@ -16,7 +16,7 @@ class SelectGenerator(
 
     fun orderingTerm(exprGenerator: ExprGenerator): OrderingTerm = OrderingTerm(
         expr = exprGenerator.expr(),
-        collateName = null, // todo
+        collateName = null,
         direction = oneOf(OrderingTerm.Direction.entries + null),
         nulls = if (cfg.orderNulls) oneOf(OrderingTerm.Nulls.entries + null) else null
     )
@@ -37,12 +37,6 @@ class SelectGenerator(
             }
             ResultColumns.ExprList(exprs) to columns.map { (alias, col) -> DataEntry(".", alias, col.type) }
         }
-        // todo star and scoped star and group functions
-//        add { ResultColumns.Star to input }
-//        add {
-//            val table = oneOf(input)
-//            ResultColumns.TableStar(table = table.scope) to input.filter { table.scope == it.scope }
-//        }
     }
 
     fun select(outMap: OutputMap = mutableMapOf()): Select {

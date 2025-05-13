@@ -19,7 +19,6 @@ fun createDataSources(
     }
 }
 
-// todo create views??
 fun createDatabase(cfg: GeneratorConfig, tables: Tables) = buildString {
     val constExprGenerator = ExprGenerator.constExprGenerator(cfg)
     tables.forEach { (name, columns) ->
@@ -43,7 +42,7 @@ fun createDatabase(cfg: GeneratorConfig, tables: Tables) = buildString {
             append(List(cfg.r.nextInt(1..5)) {
                 exprGenerator.expr()
             }.joinToString())
-            // TODO WHERE?
+            if (cfg.r.nextBoolean()) append(" WHERE ${exprGenerator.expr()}")
             append(");")
             appendLine()
         }

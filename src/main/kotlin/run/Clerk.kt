@@ -70,7 +70,7 @@ open class BaseClerk(
                     """.trimIndent()
                 )
                 appendLine("Error codes:")
-                for ((code, count) in codes) appendLine("  $code: $count (${100.0 * count / errors}% or errors)")
+                for ((code, count) in codes) appendLine("  $code: $count (${100.0 * count / errors}% of errors)")
             }
         }
     }

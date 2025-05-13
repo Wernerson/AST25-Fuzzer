@@ -33,13 +33,7 @@ class FromGenerator(
                 outMap[subquery] = output.map { DataEntry(alias, it.name, it.type) }
                 subquery
             }
-
-//            add {
-//                val (from, ds) = with(depth - 1).from()
-//                TableOrSubquery.NestedFrom(from) to ds
-//            }
         }
-        // todo table function call
     }
 
     fun joinedClause(tableOrSubquery: TableOrSubquery, dataset: DataSet): JoinClause.JoinedClause {
@@ -47,10 +41,6 @@ class FromGenerator(
         val constraint: JoinClause.JoinConstraint? = if (operator.isNatural) null else oneOf {
             val exprGenerator = ExprGenerator(cfg, dataset, exprType = ExprType.INTEGER)
             add { JoinClause.JoinConstraint.On(exprGenerator.expr()) }
-//            add {
-//                val columnNames = tables.flatMap { it.value }
-//                JoinClause.JoinConstraint.Using(listOf(1..5, columnNames))
-//            }
             add { null }
         }
         return JoinClause.JoinedClause(operator, tableOrSubquery, constraint)

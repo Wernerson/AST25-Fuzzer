@@ -5,5 +5,5 @@
   "testDb": "./test.db",
   "archiveDir": "./bugs",
   "noTables": 25,
-  "noColumns": 0
+  "noColumns": 10
 }

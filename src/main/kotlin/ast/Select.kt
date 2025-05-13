@@ -7,8 +7,6 @@ class Select(
     val where: Expr? = null,
     val groupBy: List<Expr>? = null,
     val having: Expr? = null,
-    // TODO window
-    // todo compound
     val orderBy: List<OrderingTerm>? = null,
     val limit: Limit? = null
 ) : Node {

@@ -59,7 +59,7 @@ class Mutator(
         val from = keep { s.from } mutate {
             s.from?.let {
                 val from = fromGen.mutate(it)
-                outMap[from] = outMap[it]!! // todo improve
+                outMap[from] = outMap[it]!!
                 from
             } ?: fromGen.from()
         }
