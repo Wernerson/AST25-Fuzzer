@@ -11,6 +11,8 @@ interface Clerk {
     fun summarise() {}
 }
 
+object IgnorantClerk: Clerk
+
 open class BaseClerk(
     private val archiveDir: File? = null,
     private val testDb: File? = null

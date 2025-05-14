@@ -12,10 +12,12 @@ class Trial(
     private val legislator: Legislator,
     private val executor: Executor,
     private val judicator: Judicator,
-    private val clerk: Clerk
+    private val clerk: Clerk,
+    private val showProgressBar: Boolean = true
 ) {
     fun run() {
-        for (query in legislator.pbar()) {
+        val queries = if (showProgressBar) legislator.pbar() else legislator
+        for (query in queries) {
             val result = executor.execute(query)
             val verdict = judicator.judge(query, result)
             clerk.report(query, result, verdict)
@@ -35,6 +37,13 @@ class Trial(
             Logger.debug { "Creating create.sql..." }
             val tables = createDataSources(genConfig, cfg.noTables, cfg.noColumns)
             val createSql = createDatabase(genConfig, tables)
+
+            if (cfg.subject == null) {
+                println(createSql)
+                println()
+                val legislator = SimpleLegislator(cfg.queries, genConfig, tables)
+                return Trial(legislator, LogExecutor, IgnorantJudicator, IgnorantClerk, false)
+            }
 
             val testDb = cfg.testDb?.let { File(it) }
             if (testDb != null) {

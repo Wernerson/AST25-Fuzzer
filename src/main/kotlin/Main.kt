@@ -1,9 +1,6 @@
 package net.sebyte
 
-import kotlinx.cli.ArgParser
-import kotlinx.cli.ArgType
-import kotlinx.cli.ExperimentalCli
-import kotlinx.cli.default
+import kotlinx.cli.*
 import net.sebyte.cfg.RunConfig
 import net.sebyte.cli.Logger
 import net.sebyte.run.Trial
@@ -15,7 +12,7 @@ fun main(args: Array<String>) {
 
     val version by parser.option(ArgType.Boolean, "version", description = "Display version").default(false)
     val verbose by parser.option(ArgType.Boolean, "verbose", "v", "Display version").default(false)
-    val config by parser.argument(ArgType.String, "config", "Path to config file")
+    val config by parser.argument(ArgType.String, "config", "Path to config file").optional()
     parser.parse(args)
 
     Logger.verbose = verbose
@@ -24,8 +21,7 @@ fun main(args: Array<String>) {
         return
     }
 
-    val configFile = config
-    val cfg = RunConfig.from(configFile)
+    val cfg = config?.let { RunConfig.from(it) } ?: RunConfig()
     val trial = Trial.from(cfg)
     trial.run()
 }
