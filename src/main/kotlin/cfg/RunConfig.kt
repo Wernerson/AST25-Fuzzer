@@ -10,6 +10,7 @@ enum class SQLiteConfig {
 
 @Serializable
 class RunConfig(
+    val seed: Long? = null,
     val subject: String? = null,
     val oracle: String? = null,
     val coverage: Boolean = false,

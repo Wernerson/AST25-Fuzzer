@@ -29,9 +29,9 @@ class Trial(
     companion object {
         fun from(cfg: RunConfig): Trial {
             val genConfig = when (cfg.generator) {
-                SQLiteConfig.v3_26_0 -> SQLITE_v3_26_0
-                SQLiteConfig.v3_39_4 -> SQLITE_v3_39_4
-                SQLiteConfig.v3_44_4 -> SQLITE_v3_44_4
+                SQLiteConfig.v3_26_0 -> SQLITE_v3_26_0(cfg.seed)
+                SQLiteConfig.v3_39_4 -> SQLITE_v3_39_4(cfg.seed)
+                SQLiteConfig.v3_44_4 -> SQLITE_v3_44_4(cfg.seed)
             }
 
             Logger.debug { "Creating create.sql..." }

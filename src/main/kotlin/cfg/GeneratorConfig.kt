@@ -32,7 +32,8 @@ class GeneratorConfig(
     fun supports(functionName: String) = supportedFunctions.getOrDefault(functionName, false)
 }
 
-val SQLITE_v3_44_4 = GeneratorConfig(
+fun SQLITE_v3_44_4(seed: Long? = null) = GeneratorConfig(
+    seed = seed,
     supportedFunctions = listOf(
         "abs",
         "changes", "char", "coalesce", "concat",
@@ -51,7 +52,8 @@ val SQLITE_v3_44_4 = GeneratorConfig(
     )
 )
 
-val SQLITE_v3_39_4 = GeneratorConfig(
+fun SQLITE_v3_39_4(seed: Long? = null) = GeneratorConfig(
+    seed = seed,
     supportedFunctions = listOf(
         "abs",
         "changes", "char", "coalesce",
@@ -69,7 +71,8 @@ val SQLITE_v3_39_4 = GeneratorConfig(
     )
 )
 
-val SQLITE_v3_26_0 = GeneratorConfig(
+fun SQLITE_v3_26_0(seed: Long? = null) = GeneratorConfig(
+    seed = seed,
     supportedFunctions = listOf(
         "abs",
         "changes", "char", "coalesce",
