@@ -1,5 +1,6 @@
 {
-  "subject": "sqlite3-3.26.0",
+  "subject": "./sqlite/sqlite3",
+  "oracle": "sqlite3-3.44.4",
   "generator": "v3_26_0",
   "queries": 1000,
   "testDb": "./test.db",
