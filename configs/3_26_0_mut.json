@@ -1,7 +1,7 @@
 {
   "subject": "./sqlite/sqlite3",
   "generator": "v3_26_0",
-  "queries": 1000,
+  "queries": 100,
   "mutations": 10,
   "coverage": true,
   "testDb": "./test.db",

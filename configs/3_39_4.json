@@ -1,7 +1,7 @@
 {
   "subject": "sqlite3-3.39.4",
   "generator": "v3_39_4",
-  "queries": 1000,
+  "queries": 100,
   "testDb": "./test.db",
   "archiveDir": "./bugs",
   "noTables": 25,
