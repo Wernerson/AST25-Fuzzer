@@ -8,7 +8,13 @@ https://github.com/Wernerson/AST25-Fuzzer
 
 The image is published on docker.io as `wernerson/ast25-fuzzer`.
 
-Run the following command:
+Run the following command to generate a create script and print 1000 queries to the stdout, one per line:
+
+```bash
+docker run wernerson/ast25-fuzzer test-db
+```
+
+Or run this to run a configuration file:
 
 ```bash
 docker run wernerson/ast25-fuzzer test-db configs/3_26_0_diff.json
